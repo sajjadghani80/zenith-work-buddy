@@ -5,6 +5,7 @@ import VoiceAssistant from '@/components/VoiceAssistant';
 import CalendarView from '@/components/CalendarView';
 import MessagesView from '@/components/MessagesView';
 import CallsView from '@/components/CallsView';
+import ProfileSettings from '@/components/ProfileSettings';
 import BottomNavigation from '@/components/BottomNavigation';
 
 const Index = () => {
@@ -32,11 +33,12 @@ const Index = () => {
         return <CallsView />;
       case 'profile':
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20 flex items-center justify-center">
-            <div className="text-center text-white">
-              <h1 className="text-2xl font-bold mb-4">Profile</h1>
-              <p className="text-purple-200">Profile settings coming soon...</p>
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-white">Profile & Settings</h1>
+              <p className="text-purple-200">Manage your account and preferences</p>
             </div>
+            <ProfileSettings />
           </div>
         );
       default:

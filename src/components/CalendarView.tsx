@@ -3,36 +3,57 @@ import React, { useState } from 'react';
 import { Calendar, Clock, Plus, Users, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useMeetings } from '@/hooks/useMeetings';
+import { format, isToday, isTomorrow } from 'date-fns';
 
 const CalendarView = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { meetings, isLoading, createMeeting } = useMeetings();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newMeeting, setNewMeeting] = useState({
+    title: '',
+    description: '',
+    start_time: '',
+    end_time: '',
+    location: '',
+    attendees: [] as string[],
+  });
 
-  const meetings = [
-    {
-      id: 1,
-      title: 'Team Standup',
-      time: '9:00 AM - 9:30 AM',
-      attendees: ['John', 'Sarah', 'Mike'],
-      location: 'Conference Room A',
-      color: 'bg-blue-500'
-    },
-    {
-      id: 2,
-      title: 'Client Presentation',
-      time: '2:00 PM - 3:00 PM',
-      attendees: ['Client Team', 'Product Manager'],
-      location: 'Virtual Meeting',
-      color: 'bg-purple-500'
-    },
-    {
-      id: 3,
-      title: 'Project Review',
-      time: '4:30 PM - 5:30 PM',
-      attendees: ['Development Team'],
-      location: 'Conference Room B',
-      color: 'bg-green-500'
-    }
-  ];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await createMeeting.mutateAsync({
+      ...newMeeting,
+      status: 'scheduled' as const,
+    });
+    setNewMeeting({
+      title: '',
+      description: '',
+      start_time: '',
+      end_time: '',
+      location: '',
+      attendees: [],
+    });
+    setShowAddForm(false);
+  };
+
+  const getDateLabel = (date: Date) => {
+    if (isToday(date)) return 'Today';
+    if (isTomorrow(date)) return 'Tomorrow';
+    return format(date, 'MMM dd, yyyy');
+  };
+
+  const upcomingMeetings = meetings
+    .filter(meeting => new Date(meeting.start_time) > new Date())
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20 flex items-center justify-center">
+        <div className="text-white text-xl">Loading calendar...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20">
@@ -42,53 +63,166 @@ const CalendarView = () => {
           <h1 className="text-2xl font-bold text-white">Calendar</h1>
           <p className="text-purple-200">Manage your schedule</p>
         </div>
-        <Button className="bg-purple-500 hover:bg-purple-600">
+        <Button 
+          onClick={() => setShowAddForm(true)}
+          className="bg-purple-500 hover:bg-purple-600"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Meeting
         </Button>
       </div>
+
+      {/* Add Meeting Form */}
+      {showAddForm && (
+        <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mb-6">
+          <CardHeader>
+            <CardTitle>Schedule New Meeting</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                placeholder="Meeting title"
+                value={newMeeting.title}
+                onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })}
+                className="bg-white/10 border-white/20 text-white"
+                required
+              />
+              
+              <Textarea
+                placeholder="Description (optional)"
+                value={newMeeting.description}
+                onChange={(e) => setNewMeeting({ ...newMeeting, description: e.target.value })}
+                className="bg-white/10 border-white/20 text-white"
+                rows={3}
+              />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Start Time</label>
+                  <Input
+                    type="datetime-local"
+                    value={newMeeting.start_time}
+                    onChange={(e) => setNewMeeting({ ...newMeeting, start_time: e.target.value })}
+                    className="bg-white/10 border-white/20 text-white"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">End Time</label>
+                  <Input
+                    type="datetime-local"
+                    value={newMeeting.end_time}
+                    onChange={(e) => setNewMeeting({ ...newMeeting, end_time: e.target.value })}
+                    className="bg-white/10 border-white/20 text-white"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <Input
+                placeholder="Location (optional)"
+                value={newMeeting.location}
+                onChange={(e) => setNewMeeting({ ...newMeeting, location: e.target.value })}
+                className="bg-white/10 border-white/20 text-white"
+              />
+              
+              <div className="flex gap-2">
+                <Button type="submit" className="bg-green-500 hover:bg-green-600">
+                  Schedule Meeting
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAddForm(false)}
+                  className="border-white/20 text-white"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Today's Schedule */}
       <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-purple-300" />
-            Today's Schedule
+            Upcoming Meetings
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {meetings.map((meeting) => (
-            <div key={meeting.id} className="flex items-start gap-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
-              <div className={`w-4 h-4 rounded-full ${meeting.color} mt-1`}></div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">{meeting.title}</h3>
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-300">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {meeting.time}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {meeting.attendees.length} attendees
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {meeting.location}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {meeting.attendees.map((attendee, index) => (
-                    <span key={index} className="px-2 py-1 bg-purple-500/20 rounded-full text-xs">
-                      {attendee}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
-                Join
-              </Button>
+          {upcomingMeetings.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No upcoming meetings scheduled</p>
+              <p className="text-sm">Click "Add Meeting" to schedule one</p>
             </div>
-          ))}
+          ) : (
+            upcomingMeetings.map((meeting) => {
+              const startDate = new Date(meeting.start_time);
+              const endDate = new Date(meeting.end_time);
+              
+              return (
+                <div key={meeting.id} className="flex items-start gap-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
+                  <div className="w-4 h-4 rounded-full bg-purple-500 mt-1"></div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-lg">{meeting.title}</h3>
+                      <span className="text-sm bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                        {getDateLabel(startDate)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mb-2 text-sm text-gray-300">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
+                      </div>
+                      
+                      {meeting.attendees.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {meeting.attendees.length} attendees
+                        </div>
+                      )}
+                      
+                      {meeting.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {meeting.location}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {meeting.description && (
+                      <p className="text-gray-400 text-sm mb-2">{meeting.description}</p>
+                    )}
+                    
+                    {meeting.attendees.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {meeting.attendees.map((attendee, index) => (
+                          <span key={index} className="px-2 py-1 bg-purple-500/20 rounded-full text-xs text-purple-200">
+                            {attendee}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    Join
+                  </Button>
+                </div>
+              );
+            })
+          )}
         </CardContent>
       </Card>
 
