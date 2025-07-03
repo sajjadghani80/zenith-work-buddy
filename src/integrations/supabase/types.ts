@@ -9,7 +9,150 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      calls: {
+        Row: {
+          call_time: string
+          call_type: string
+          contact_name: string
+          duration: number | null
+          id: string
+          notes: string | null
+          phone_number: string | null
+          user_id: string
+        }
+        Insert: {
+          call_time?: string
+          call_type?: string
+          contact_name: string
+          duration?: number | null
+          id?: string
+          notes?: string | null
+          phone_number?: string | null
+          user_id: string
+        }
+        Update: {
+          call_time?: string
+          call_type?: string
+          contact_name?: string
+          duration?: number | null
+          id?: string
+          notes?: string | null
+          phone_number?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meetings: {
+        Row: {
+          attendees: string[] | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          location: string | null
+          start_time: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attendees?: string[] | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          location?: string | null
+          start_time: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attendees?: string[] | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          location?: string | null
+          start_time?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          id: string
+          is_read: boolean
+          message_type: string
+          priority: string
+          received_at: string
+          sender_name: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          priority?: string
+          received_at?: string
+          sender_name: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          priority?: string
+          received_at?: string
+          sender_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
