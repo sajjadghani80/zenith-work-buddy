@@ -13,6 +13,7 @@ export interface Task {
   due_date?: string;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 export const useTasks = () => {
@@ -24,7 +25,7 @@ export const useTasks = () => {
     queryKey: ['tasks'],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('tasks')
         .select('*')
         .order('created_at', { ascending: false });
@@ -36,9 +37,9 @@ export const useTasks = () => {
   });
 
   const createTask = useMutation({
-    mutationFn: async (newTask: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (newTask: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
       if (!user) throw new Error('User not authenticated');
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('tasks')
         .insert([{ ...newTask, user_id: user.id }])
         .select()
@@ -58,7 +59,7 @@ export const useTasks = () => {
 
   const updateTask = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Task> & { id: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('tasks')
         .update(updates)
         .eq('id', id)
@@ -75,7 +76,7 @@ export const useTasks = () => {
 
   const deleteTask = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('tasks')
         .delete()
         .eq('id', id);

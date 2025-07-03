@@ -11,6 +11,7 @@ export interface Call {
   duration?: number;
   notes?: string;
   call_time: string;
+  user_id: string;
 }
 
 export const useCalls = () => {
@@ -20,7 +21,7 @@ export const useCalls = () => {
     queryKey: ['calls'],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('calls')
         .select('*')
         .order('call_time', { ascending: false });

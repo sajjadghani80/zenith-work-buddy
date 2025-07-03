@@ -11,6 +11,7 @@ export interface Message {
   is_read: boolean;
   priority: 'low' | 'medium' | 'high';
   received_at: string;
+  user_id: string;
 }
 
 export const useMessages = () => {
@@ -21,7 +22,7 @@ export const useMessages = () => {
     queryKey: ['messages'],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('messages')
         .select('*')
         .order('received_at', { ascending: false });
@@ -34,7 +35,7 @@ export const useMessages = () => {
 
   const markAsRead = useMutation({
     mutationFn: async (messageId: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('messages')
         .update({ is_read: true })
         .eq('id', messageId);

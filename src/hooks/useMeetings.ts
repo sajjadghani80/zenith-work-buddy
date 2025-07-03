@@ -15,6 +15,7 @@ export interface Meeting {
   status: 'scheduled' | 'completed' | 'cancelled';
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 export const useMeetings = () => {
@@ -26,7 +27,7 @@ export const useMeetings = () => {
     queryKey: ['meetings'],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('meetings')
         .select('*')
         .order('start_time', { ascending: true });
@@ -38,9 +39,9 @@ export const useMeetings = () => {
   });
 
   const createMeeting = useMutation({
-    mutationFn: async (newMeeting: Omit<Meeting, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (newMeeting: Omit<Meeting, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
       if (!user) throw new Error('User not authenticated');
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('meetings')
         .insert([{ ...newMeeting, user_id: user.id }])
         .select()
@@ -60,7 +61,7 @@ export const useMeetings = () => {
 
   const updateMeeting = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Meeting> & { id: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('meetings')
         .update(updates)
         .eq('id', id)
