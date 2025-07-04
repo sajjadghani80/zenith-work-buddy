@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { User, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import SubscriptionPlans from '@/components/SubscriptionPlans';
+import SubscriptionStatus from '@/components/SubscriptionStatus';
 
 const ProfileSettings = () => {
   const { user, signOut } = useAuth();
@@ -28,6 +30,11 @@ const ProfileSettings = () => {
 
   return (
     <div className="space-y-6">
+      <SubscriptionStatus />
+      
+      {/* Subscription Plans */}
+      <SubscriptionPlans />
+      
       {/* User Profile */}
       <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
         <CardHeader>
