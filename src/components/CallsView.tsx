@@ -1,71 +1,32 @@
 
-import React, { useState } from 'react';
-import { Phone, PhoneCall, PhoneOff, Mic, MicOff, Volume2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, PhoneCall, PhoneOff, Mic, MicOff, Volume2, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useCalls } from '@/hooks/useCalls';
+import { useTwilioVoice } from '@/hooks/useTwilioVoice';
 
 const CallsView = () => {
   const [aiCallsEnabled, setAiCallsEnabled] = useState(true);
+  const [outboundNumber, setOutboundNumber] = useState('');
+  const [outboundMessage, setOutboundMessage] = useState('Hello, this is an automated message from your AI assistant.');
+  
+  const { calls, isLoading: callsLoading } = useCalls();
+  const { isConfigured, isLoading: twilioLoading, makeCall, getWebhookUrl, checkConfiguration } = useTwilioVoice();
 
-  const recentCalls = [
-    {
-      id: 1,
-      name: 'John Smith',
-      number: '+1 (555) 123-4567',
-      type: 'missed',
-      time: '10 minutes ago',
-      duration: null,
-      aiHandled: true,
-      message: 'AI took message: Wants to discuss project timeline'
-    },
-    {
-      id: 2,
-      name: 'Sarah Wilson',
-      number: '+1 (555) 987-6543',
-      type: 'incoming',
-      time: '1 hour ago',
-      duration: '12 min',
-      aiHandled: false,
-      message: null
-    },
-    {
-      id: 3,
-      name: 'Unknown',
-      number: '+1 (555) 456-7890',
-      type: 'missed',
-      time: '2 hours ago',
-      duration: null,
-      aiHandled: true,
-      message: 'AI responded: Sales call, marked as spam'
-    },
-    {
-      id: 4,
-      name: 'Mike Johnson',
-      number: '+1 (555) 234-5678',
-      type: 'outgoing',
-      time: '3 hours ago',
-      duration: '8 min',
-      aiHandled: false,
-      message: null
-    }
-  ];
+  useEffect(() => {
+    checkConfiguration();
+  }, [checkConfiguration]);
 
-  const aiMessages = [
-    {
-      id: 1,
-      caller: 'John Smith',
-      message: 'Hi, this is John calling about the project timeline. Could you please call me back when you get a chance? My number is 555-123-4567. Thanks!',
-      time: '10 minutes ago',
-      priority: 'high'
-    },
-    {
-      id: 2,
-      caller: 'Marketing Agency',
-      message: 'This was a sales call. I informed them you are not interested and asked to be removed from their list.',
-      time: '2 hours ago',
-      priority: 'low'
+  const handleMakeCall = async () => {
+    if (!outboundNumber.trim()) {
+      return;
     }
-  ];
+    
+    await makeCall(outboundNumber, outboundMessage);
+    setOutboundNumber('');
+  };
 
   const getCallIcon = (type: string) => {
     switch (type) {
@@ -80,13 +41,20 @@ const CallsView = () => {
     }
   };
 
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds) return null;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Calls</h1>
-          <p className="text-purple-200">AI call management</p>
+          <p className="text-purple-200">AI call management with Twilio</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-white">AI Assistant:</span>
@@ -98,6 +66,86 @@ const CallsView = () => {
           </Button>
         </div>
       </div>
+
+      {/* Twilio Configuration Status */}
+      <Card className={`${isConfigured ? 'bg-gradient-to-r from-green-500/20 to-blue-500/20' : 'bg-gradient-to-r from-red-500/20 to-orange-500/20'} backdrop-blur-lg border-white/20 text-white mb-6`}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Twilio Voice API Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span>Voice API Status:</span>
+              <div className={`w-3 h-3 rounded-full ${isConfigured ? 'bg-green-400' : 'bg-red-400'}`}></div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Auto-answer calls:</span>
+              <div className={`w-3 h-3 rounded-full ${isConfigured && aiCallsEnabled ? 'bg-green-400' : 'bg-red-400'}`}></div>
+            </div>
+            {isConfigured && (
+              <div className="text-sm bg-blue-500/10 p-3 rounded-lg">
+                <p><strong>Webhook URL:</strong></p>
+                <p className="font-mono text-xs break-all">{getWebhookUrl()}</p>
+                <p className="mt-2 text-blue-200">Configure this URL in your Twilio phone number settings.</p>
+              </div>
+            )}
+            {!isConfigured && (
+              <div className="text-sm bg-red-500/10 p-3 rounded-lg">
+                <p className="text-red-200">Twilio credentials not configured. Please set up:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>TWILIO_ACCOUNT_SID</li>
+                  <li>TWILIO_AUTH_TOKEN</li>
+                  <li>TWILIO_PHONE_NUMBER</li>
+                </ul>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Make Outbound Call */}
+      {isConfigured && (
+        <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PhoneCall className="w-5 h-5 text-blue-300" />
+              Make Outbound Call
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Phone Number</label>
+              <Input
+                type="tel"
+                placeholder="+1234567890"
+                value={outboundNumber}
+                onChange={(e) => setOutboundNumber(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Message</label>
+              <Input
+                type="text"
+                value={outboundMessage}
+                onChange={(e) => setOutboundMessage(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+              />
+            </div>
+            <Button
+              onClick={handleMakeCall}
+              disabled={twilioLoading || !outboundNumber.trim()}
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              <Phone className="w-4 h-4 mr-2" />
+              {twilioLoading ? 'Calling...' : 'Make Call'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* AI Call Status */}
       <Card className="bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-lg border-white/20 text-white mb-6">
@@ -111,66 +159,25 @@ const CallsView = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span>Auto-answer when busy:</span>
-              <div className={`w-3 h-3 rounded-full ${aiCallsEnabled ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${aiCallsEnabled && isConfigured ? 'bg-green-400' : 'bg-red-400'}`}></div>
             </div>
             <div className="flex items-center justify-between">
               <span>Voice recognition:</span>
-              <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+              <div className={`w-3 h-3 rounded-full ${isConfigured ? 'bg-green-400' : 'bg-red-400'}`}></div>
             </div>
             <div className="flex items-center justify-between">
               <span>Message transcription:</span>
-              <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+              <div className={`w-3 h-3 rounded-full ${isConfigured ? 'bg-green-400' : 'bg-red-400'}`}></div>
             </div>
           </div>
           <p className="text-sm text-green-200 mt-4">
-            {aiCallsEnabled 
+            {aiCallsEnabled && isConfigured
               ? 'Your AI assistant will answer calls when you\'re unavailable and take detailed messages.'
-              : 'AI call assistance is disabled. Calls will go to voicemail.'
+              : 'AI call assistance requires Twilio configuration.'
             }
           </p>
         </CardContent>
       </Card>
-
-      {/* AI Messages */}
-      {aiMessages.length > 0 && (
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Volume2 className="w-5 h-5 text-purple-300" />
-              AI Call Messages
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {aiMessages.map((msg) => (
-              <div key={msg.id} className="p-4 bg-white/5 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold">{msg.caller}</h4>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      msg.priority === 'high' ? 'bg-red-500/20 text-red-300' : 'bg-gray-500/20 text-gray-300'
-                    }`}>
-                      {msg.priority} priority
-                    </span>
-                    <span className="text-xs text-gray-400">{msg.time}</span>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-300 mb-3">{msg.message}</p>
-                <div className="flex gap-2">
-                  <Button size="sm" className="bg-purple-500 hover:bg-purple-600">
-                    Call Back
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                    Add to Tasks
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                    Dismiss
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Recent Calls */}
       <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
@@ -181,38 +188,48 @@ const CallsView = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {recentCalls.map((call) => (
-            <div key={call.id} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
-              <div className="flex items-center justify-center w-10 h-10 bg-white/10 rounded-full">
-                {getCallIcon(call.type)}
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{call.name}</h3>
-                  <span className="text-xs text-gray-400">{call.time}</span>
+          {callsLoading ? (
+            <div className="text-center py-4">Loading calls...</div>
+          ) : calls.length === 0 ? (
+            <div className="text-center py-4 text-gray-400">No calls yet</div>
+          ) : (
+            calls.map((call) => (
+              <div key={call.id} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
+                <div className="flex items-center justify-center w-10 h-10 bg-white/10 rounded-full">
+                  {getCallIcon(call.call_type)}
                 </div>
-                <p className="text-sm text-gray-300">{call.number}</p>
-                {call.duration && (
-                  <p className="text-xs text-blue-300">Duration: {call.duration}</p>
-                )}
-                {call.aiHandled && call.message && (
-                  <p className="text-xs text-green-300 mt-1">🤖 {call.message}</p>
-                )}
-              </div>
-              
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                  <Phone className="w-4 h-4" />
-                </Button>
-                {call.aiHandled && call.message && (
+                
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{call.contact_name}</h3>
+                    <span className="text-xs text-gray-400">
+                      {new Date(call.call_time).toLocaleString()}
+                    </span>
+                  </div>
+                  {call.phone_number && (
+                    <p className="text-sm text-gray-300">{call.phone_number}</p>
+                  )}
+                  {call.duration && (
+                    <p className="text-xs text-blue-300">Duration: {formatDuration(call.duration)}</p>
+                  )}
+                  {call.notes && (
+                    <p className="text-xs text-green-300 mt-1">🤖 {call.notes}</p>
+                  )}
+                </div>
+                
+                <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                    <Volume2 className="w-4 h-4" />
+                    <Phone className="w-4 h-4" />
                   </Button>
-                )}
+                  {call.notes && (
+                    <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                      <Volume2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -233,9 +250,9 @@ const CallsView = () => {
           <div className="flex items-center justify-between">
             <span>Voice personality:</span>
             <select className="bg-white/10 border border-white/20 rounded px-3 py-1 text-white">
-              <option value="professional">Professional</option>
-              <option value="friendly">Friendly</option>
-              <option value="brief">Brief & Direct</option>
+              <option value="alice">Alice (Female)</option>
+              <option value="man">Man (Male)</option>
+              <option value="woman">Woman (Female)</option>
             </select>
           </div>
           <div className="flex items-center justify-between">
