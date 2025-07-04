@@ -36,33 +36,45 @@ const ProfileSettings = () => {
       <SubscriptionPlans />
       
       {/* User Profile */}
-      <Card className="shadow-sm" style={{ backgroundColor: 'hsl(var(--app-surface))' }}>
+      <Card 
+        className="border-0 shadow-lg hover:shadow-xl transition-all duration-300" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          boxShadow: '0 8px 25px rgba(79, 70, 229, 0.12), 0 3px 10px rgba(0, 0, 0, 0.08)'
+        }}
+      >
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3" style={{ color: 'hsl(var(--app-text-primary))' }}>
+          <CardTitle className="flex items-center gap-3 text-xl" style={{ color: 'hsl(var(--app-text-primary))' }}>
             <div 
-              className="p-2 rounded-lg"
-              style={{ backgroundColor: 'rgba(79, 70, 229, 0.1)' }}
+              className="p-3 rounded-xl shadow-sm"
+              style={{ 
+                background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(167, 139, 250, 0.1))',
+                border: '1px solid rgba(79, 70, 229, 0.2)'
+              }}
             >
-              <User className="w-5 h-5" style={{ color: 'hsl(var(--app-primary))' }} />
+              <User className="w-6 h-6" style={{ color: 'hsl(var(--app-primary))' }} />
             </div>
             Profile Information
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
             <div 
-              className="w-16 h-16 rounded-2xl flex items-center justify-center"
+              className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg"
               style={{ 
-                background: 'linear-gradient(135deg, hsl(var(--app-primary)), hsl(var(--app-secondary)))' 
+                background: 'linear-gradient(135deg, hsl(var(--app-primary)), hsl(var(--app-secondary)))',
+                boxShadow: '0 8px 25px rgba(79, 70, 229, 0.25)'
               }}
             >
-              <User className="w-8 h-8 text-white" />
+              <User className="w-10 h-10 text-white" />
             </div>
-            <div>
-              <h3 className="text-xl font-semibold" style={{ color: 'hsl(var(--app-text-primary))' }}>
+            <div className="space-y-1">
+              <h3 className="text-2xl font-bold" style={{ color: 'hsl(var(--app-text-primary))' }}>
                 {user?.user_metadata?.full_name || 'User'}
               </h3>
-              <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{user?.email}</p>
+              <p className="text-base font-medium" style={{ color: 'hsl(var(--app-text-secondary))' }}>
+                {user?.email}
+              </p>
               <p className="text-sm" style={{ color: 'hsl(var(--app-text-secondary))' }}>
                 Member since {new Date(user?.created_at || '').toLocaleDateString()}
               </p>
@@ -72,36 +84,49 @@ const ProfileSettings = () => {
       </Card>
 
       {/* Settings */}
-      <Card className="shadow-sm" style={{ backgroundColor: 'hsl(var(--app-surface))' }}>
+      <Card 
+        className="border-0 shadow-lg hover:shadow-xl transition-all duration-300" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          boxShadow: '0 8px 25px rgba(79, 70, 229, 0.12), 0 3px 10px rgba(0, 0, 0, 0.08)'
+        }}
+      >
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3" style={{ color: 'hsl(var(--app-text-primary))' }}>
+          <CardTitle className="flex items-center gap-3 text-xl" style={{ color: 'hsl(var(--app-text-primary))' }}>
             <div 
-              className="p-2 rounded-lg"
-              style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+              className="p-3 rounded-xl shadow-sm"
+              style={{ 
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))',
+                border: '1px solid rgba(16, 185, 129, 0.2)'
+              }}
             >
-              <Settings className="w-5 h-5" style={{ color: 'hsl(var(--app-accent))' }} />
+              <Settings className="w-6 h-6" style={{ color: 'hsl(var(--app-accent))' }} />
             </div>
             Settings
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <div className="space-y-3">
             <div 
-              className="flex items-center justify-between p-4 rounded-xl border hover:shadow-sm transition-all duration-200"
+              className="flex items-center justify-between p-5 rounded-2xl border hover:shadow-lg transition-all duration-300 group cursor-pointer"
               style={{ 
-                backgroundColor: 'rgba(110, 110, 115, 0.05)',
-                borderColor: 'rgba(110, 110, 115, 0.1)'
+                backgroundColor: 'hsl(var(--app-background))',
+                borderColor: 'rgba(79, 70, 229, 0.15)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
               }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div 
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                  className="p-3 rounded-xl group-hover:scale-105 transition-transform duration-200"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05))',
+                    border: '1px solid rgba(245, 158, 11, 0.2)'
+                  }}
                 >
-                  <Bell className="w-4 h-4" style={{ color: '#F59E0B' }} />
+                  <Bell className="w-5 h-5" style={{ color: '#F59E0B' }} />
                 </div>
                 <div>
-                  <h4 className="font-semibold" style={{ color: 'hsl(var(--app-text-primary))' }}>
+                  <h4 className="font-bold text-base" style={{ color: 'hsl(var(--app-text-primary))' }}>
                     Notifications
                   </h4>
                   <p className="text-sm" style={{ color: 'hsl(var(--app-text-secondary))' }}>
@@ -112,9 +137,11 @@ const ProfileSettings = () => {
               <Button 
                 variant="outline" 
                 size="sm"
+                className="shadow-sm hover:shadow-md transition-all duration-200 font-medium"
                 style={{
-                  borderColor: 'rgba(110, 110, 115, 0.2)',
-                  color: 'hsl(var(--app-text-secondary))'
+                  borderColor: 'rgba(79, 70, 229, 0.3)',
+                  color: 'hsl(var(--app-primary))',
+                  backgroundColor: 'rgba(79, 70, 229, 0.05)'
                 }}
               >
                 Configure
@@ -122,21 +149,25 @@ const ProfileSettings = () => {
             </div>
             
             <div 
-              className="flex items-center justify-between p-4 rounded-xl border hover:shadow-sm transition-all duration-200"
+              className="flex items-center justify-between p-5 rounded-2xl border hover:shadow-lg transition-all duration-300 group cursor-pointer"
               style={{ 
-                backgroundColor: 'rgba(110, 110, 115, 0.05)',
-                borderColor: 'rgba(110, 110, 115, 0.1)'
+                backgroundColor: 'hsl(var(--app-background))',
+                borderColor: 'rgba(79, 70, 229, 0.15)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
               }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div 
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+                  className="p-3 rounded-xl group-hover:scale-105 transition-transform duration-200"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))',
+                    border: '1px solid rgba(16, 185, 129, 0.2)'
+                  }}
                 >
-                  <CalendarIcon className="w-4 h-4" style={{ color: 'hsl(var(--app-accent))' }} />
+                  <CalendarIcon className="w-5 h-5" style={{ color: 'hsl(var(--app-accent))' }} />
                 </div>
                 <div>
-                  <h4 className="font-semibold" style={{ color: 'hsl(var(--app-text-primary))' }}>
+                  <h4 className="font-bold text-base" style={{ color: 'hsl(var(--app-text-primary))' }}>
                     Calendar Sync
                   </h4>
                   <p className="text-sm" style={{ color: 'hsl(var(--app-text-secondary))' }}>
@@ -147,9 +178,11 @@ const ProfileSettings = () => {
               <Button 
                 variant="outline" 
                 size="sm"
+                className="shadow-sm hover:shadow-md transition-all duration-200 font-medium"
                 style={{
-                  borderColor: 'rgba(110, 110, 115, 0.2)',
-                  color: 'hsl(var(--app-text-secondary))'
+                  borderColor: 'rgba(79, 70, 229, 0.3)',
+                  color: 'hsl(var(--app-primary))',
+                  backgroundColor: 'rgba(79, 70, 229, 0.05)'
                 }}
               >
                 Setup
@@ -157,21 +190,25 @@ const ProfileSettings = () => {
             </div>
             
             <div 
-              className="flex items-center justify-between p-4 rounded-xl border hover:shadow-sm transition-all duration-200"
+              className="flex items-center justify-between p-5 rounded-2xl border hover:shadow-lg transition-all duration-300 group cursor-pointer"
               style={{ 
-                backgroundColor: 'rgba(110, 110, 115, 0.05)',
-                borderColor: 'rgba(110, 110, 115, 0.1)'
+                backgroundColor: 'hsl(var(--app-background))',
+                borderColor: 'rgba(79, 70, 229, 0.15)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
               }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div 
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: 'rgba(167, 139, 250, 0.1)' }}
+                  className="p-3 rounded-xl group-hover:scale-105 transition-transform duration-200"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(167, 139, 250, 0.05))',
+                    border: '1px solid rgba(167, 139, 250, 0.2)'
+                  }}
                 >
-                  <Shield className="w-4 h-4" style={{ color: 'hsl(var(--app-secondary))' }} />
+                  <Shield className="w-5 h-5" style={{ color: 'hsl(var(--app-secondary))' }} />
                 </div>
                 <div>
-                  <h4 className="font-semibold" style={{ color: 'hsl(var(--app-text-primary))' }}>
+                  <h4 className="font-bold text-base" style={{ color: 'hsl(var(--app-text-primary))' }}>
                     Privacy
                   </h4>
                   <p className="text-sm" style={{ color: 'hsl(var(--app-text-secondary))' }}>
@@ -182,9 +219,11 @@ const ProfileSettings = () => {
               <Button 
                 variant="outline" 
                 size="sm"
+                className="shadow-sm hover:shadow-md transition-all duration-200 font-medium"
                 style={{
-                  borderColor: 'rgba(110, 110, 115, 0.2)',
-                  color: 'hsl(var(--app-text-secondary))'
+                  borderColor: 'rgba(79, 70, 229, 0.3)',
+                  color: 'hsl(var(--app-primary))',
+                  backgroundColor: 'rgba(79, 70, 229, 0.05)'
                 }}
               >
                 Manage
@@ -195,17 +234,30 @@ const ProfileSettings = () => {
       </Card>
 
       {/* Account Actions */}
-      <Card className="shadow-sm" style={{ backgroundColor: 'hsl(var(--app-surface))' }}>
+      <Card 
+        className="border-0 shadow-lg hover:shadow-xl transition-all duration-300" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          boxShadow: '0 8px 25px rgba(239, 68, 68, 0.12), 0 3px 10px rgba(0, 0, 0, 0.08)'
+        }}
+      >
         <CardHeader className="pb-4">
-          <CardTitle style={{ color: 'hsl(var(--app-text-primary))' }}>Account Actions</CardTitle>
+          <CardTitle className="text-xl" style={{ color: 'hsl(var(--app-text-primary))' }}>
+            Account Actions
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Button
             onClick={handleSignOut}
-            variant="destructive"
-            className="w-full bg-red-500 hover:bg-red-600 text-white"
+            className="w-full shadow-lg hover:shadow-xl transition-all duration-200 font-semibold py-3"
+            style={{
+              backgroundColor: '#EF4444',
+              borderColor: '#EF4444',
+              color: 'white',
+              boxShadow: '0 4px 15px rgba(239, 68, 68, 0.3)'
+            }}
           >
-            <LogOut className="w-4 h-4 mr-2" />
+            <LogOut className="w-5 h-5 mr-2" />
             Sign Out
           </Button>
         </CardContent>
