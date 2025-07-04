@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar, Clock, Plus, Users, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMeetings } from '@/hooks/useMeetings';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { format, isToday, isTomorrow } from 'date-fns';
+import GoogleCalendarSync from './GoogleCalendarSync';
 
 const CalendarView = () => {
   const { meetings, isLoading, createMeeting } = useMeetings();
+  const { isConnected, createGoogleCalendarEvent } = useGoogleCalendar();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newMeeting, setNewMeeting] = useState({
     title: '',
@@ -19,22 +21,55 @@ const CalendarView = () => {
     location: '',
     attendees: [] as string[],
   });
+  const [attendeesInput, setAttendeesInput] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createMeeting.mutateAsync({
-      ...newMeeting,
-      status: 'scheduled' as const,
-    });
-    setNewMeeting({
-      title: '',
-      description: '',
-      start_time: '',
-      end_time: '',
-      location: '',
-      attendees: [],
-    });
-    setShowAddForm(false);
+    
+    try {
+      // Create meeting in local database
+      const meetingData = {
+        ...newMeeting,
+        attendees: attendeesInput ? attendeesInput.split(',').map(email => email.trim()) : [],
+        status: 'scheduled' as const,
+      };
+      
+      await createMeeting.mutateAsync(meetingData);
+
+      // If Google Calendar is connected, sync the meeting
+      if (isConnected && createGoogleCalendarEvent) {
+        const googleEvent = {
+          summary: newMeeting.title,
+          description: newMeeting.description,
+          start: {
+            dateTime: new Date(newMeeting.start_time).toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          end: {
+            dateTime: new Date(newMeeting.end_time).toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          location: newMeeting.location,
+          attendees: meetingData.attendees.map(email => ({ email })),
+        };
+
+        await createGoogleCalendarEvent(googleEvent);
+      }
+
+      // Reset form
+      setNewMeeting({
+        title: '',
+        description: '',
+        start_time: '',
+        end_time: '',
+        location: '',
+        attendees: [],
+      });
+      setAttendeesInput('');
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Failed to create meeting:', error);
+    }
   };
 
   const getDateLabel = (date: Date) => {
@@ -72,6 +107,11 @@ const CalendarView = () => {
         </Button>
       </div>
 
+      {/* Google Calendar Integration */}
+      <div className="mb-6">
+        <GoogleCalendarSync />
+      </div>
+
       {/* Add Meeting Form */}
       {showAddForm && (
         <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mb-6">
@@ -84,7 +124,7 @@ const CalendarView = () => {
                 placeholder="Meeting title"
                 value={newMeeting.title}
                 onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })}
-                className="bg-white/10 border-white/20 text-white"
+                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                 required
               />
               
@@ -92,7 +132,7 @@ const CalendarView = () => {
                 placeholder="Description (optional)"
                 value={newMeeting.description}
                 onChange={(e) => setNewMeeting({ ...newMeeting, description: e.target.value })}
-                className="bg-white/10 border-white/20 text-white"
+                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                 rows={3}
               />
               
@@ -124,18 +164,26 @@ const CalendarView = () => {
                 placeholder="Location (optional)"
                 value={newMeeting.location}
                 onChange={(e) => setNewMeeting({ ...newMeeting, location: e.target.value })}
-                className="bg-white/10 border-white/20 text-white"
+                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+              />
+
+              <Input
+                placeholder="Attendees (comma-separated emails)"
+                value={attendeesInput}
+                onChange={(e) => setAttendeesInput(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
               />
               
               <div className="flex gap-2">
                 <Button type="submit" className="bg-green-500 hover:bg-green-600">
                   Schedule Meeting
+                  {isConnected && <span className="text-xs ml-1">(+ Google Cal)</span>}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowAddForm(false)}
-                  className="border-white/20 text-white"
+                  className="border-white/20 text-white hover:bg-white/10"
                 >
                   Cancel
                 </Button>
