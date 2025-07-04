@@ -165,10 +165,22 @@ const VoiceAssistant = () => {
   if (!isSupported) {
     return (
       <div className="space-y-4">
-        <Card className="bg-red-500/20 backdrop-blur-lg border-red-300/20 text-white">
+        <Card 
+          className="shadow-lg border-0" 
+          style={{ 
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            boxShadow: '0 10px 25px rgba(239, 68, 68, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+          }}
+        >
           <CardContent className="p-6 text-center">
-            <h3 className="text-xl font-semibold mb-2">Voice Recognition Not Supported</h3>
-            <p className="text-red-200">
+            <h3 
+              className="text-xl font-semibold mb-2"
+              style={{ color: 'hsl(var(--app-text-primary))' }}
+            >
+              Voice Recognition Not Supported
+            </h3>
+            <p style={{ color: 'hsl(var(--app-text-secondary))' }}>
               Your browser doesn't support Web Speech API. Please use Chrome, Edge, or Safari for voice features.
             </p>
           </CardContent>
@@ -178,28 +190,46 @@ const VoiceAssistant = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Voice Control Interface */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
-        <CardContent className="p-6 text-center">
-          <div className="mb-4">
+      <Card 
+        className="shadow-lg border-0" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          boxShadow: '0 20px 50px rgba(79, 70, 229, 0.15), 0 8px 20px rgba(0, 0, 0, 0.1)'
+        }}
+      >
+        <CardContent className="p-8 text-center">
+          <div className="mb-6">
             <Button
               onClick={handleVoiceCommand}
-              className={`w-20 h-20 rounded-full mx-auto ${
+              className={`w-24 h-24 rounded-full mx-auto shadow-lg transition-all duration-300 ${
                 isListening 
-                  ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                  : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600'
+                  ? 'bg-red-500 hover:bg-red-600 animate-pulse shadow-red-200' 
+                  : ''
               }`}
+              style={{
+                backgroundColor: isListening ? undefined : 'hsl(var(--app-primary))',
+                boxShadow: isListening 
+                  ? '0 0 0 0 rgba(239, 68, 68, 0.7)' 
+                  : '0 10px 30px rgba(79, 70, 229, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
+              }}
             >
               {isListening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
             </Button>
           </div>
           
-          <h3 className="text-xl font-semibold mb-2">
+          <h3 
+            className="text-2xl font-bold mb-3"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
             {isListening ? 'Listening... Speak now!' : 'Tap to speak'}
           </h3>
           
-          <p className="text-purple-200 text-sm">
+          <p 
+            className="text-base"
+            style={{ color: 'hsl(var(--app-text-secondary))' }}
+          >
             {isListening 
               ? 'I\'m actively listening. Speak clearly and say something like "Show my meetings"'
               : 'Your AI assistant is ready to listen and help with scheduling, tasks, and more'
@@ -210,15 +240,30 @@ const VoiceAssistant = () => {
 
       {/* Error Display */}
       {error && (
-        <Card className="bg-red-500/20 backdrop-blur-lg border-red-300/20 text-white">
+        <Card 
+          className="shadow-lg border-0" 
+          style={{ 
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            boxShadow: '0 10px 25px rgba(239, 68, 68, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+          }}
+        >
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                <MicOff className="w-4 h-4" />
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
+              >
+                <MicOff className="w-4 h-4 text-red-500" />
               </div>
               <div>
-                <h4 className="font-semibold">Error:</h4>
-                <p className="text-red-200">{error}</p>
+                <h4 
+                  className="font-semibold"
+                  style={{ color: 'hsl(var(--app-text-primary))' }}
+                >
+                  Error:
+                </h4>
+                <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{error}</p>
               </div>
             </div>
           </CardContent>
@@ -227,15 +272,30 @@ const VoiceAssistant = () => {
 
       {/* Transcript Display */}
       {transcript && (
-        <Card className="bg-blue-500/20 backdrop-blur-lg border-blue-300/20 text-white">
+        <Card 
+          className="shadow-lg border-0" 
+          style={{ 
+            backgroundColor: 'hsl(var(--app-surface))',
+            border: '1px solid rgba(79, 70, 229, 0.2)',
+            boxShadow: '0 10px 25px rgba(79, 70, 229, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+          }}
+        >
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <Mic className="w-4 h-4" />
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(79, 70, 229, 0.15)' }}
+              >
+                <Mic className="w-4 h-4" style={{ color: 'hsl(var(--app-primary))' }} />
               </div>
               <div>
-                <h4 className="font-semibold">You said:</h4>
-                <p className="text-blue-200">{transcript}</p>
+                <h4 
+                  className="font-semibold"
+                  style={{ color: 'hsl(var(--app-text-primary))' }}
+                >
+                  You said:
+                </h4>
+                <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{transcript}</p>
               </div>
             </div>
           </CardContent>
@@ -244,15 +304,30 @@ const VoiceAssistant = () => {
 
       {/* AI Response */}
       {response && (
-        <Card className="bg-purple-500/20 backdrop-blur-lg border-purple-300/20 text-white">
+        <Card 
+          className="shadow-lg border-0" 
+          style={{ 
+            backgroundColor: 'hsl(var(--app-surface))',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            boxShadow: '0 10px 25px rgba(16, 185, 129, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+          }}
+        >
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                <Volume2 className="w-4 h-4" />
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}
+              >
+                <Volume2 className="w-4 h-4" style={{ color: 'hsl(var(--app-accent))' }} />
               </div>
               <div>
-                <h4 className="font-semibold">Assistant:</h4>
-                <p className="text-purple-200">{response}</p>
+                <h4 
+                  className="font-semibold"
+                  style={{ color: 'hsl(var(--app-text-primary))' }}
+                >
+                  Assistant:
+                </h4>
+                <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{response}</p>
               </div>
             </div>
           </CardContent>
@@ -260,16 +335,81 @@ const VoiceAssistant = () => {
       )}
 
       {/* Quick Commands */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
-        <CardContent className="p-4">
-          <h4 className="font-semibold mb-3">Try saying:</h4>
-          <div className="grid grid-cols-1 gap-2 text-sm text-purple-200">
-            <p>• "Show my meetings today"</p>
-            <p>• "What tasks do I have?"</p>
-            <p>• "Any missed calls?"</p>
-            <p>• "Check my messages"</p>
-            <p>• "Schedule a meeting"</p>
-            <p>• "Help me"</p>
+      <Card 
+        className="shadow-lg border-0" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          boxShadow: '0 10px 25px rgba(79, 70, 229, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+        }}
+      >
+        <CardContent className="p-6">
+          <h4 
+            className="font-semibold mb-4 text-lg"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            Try saying:
+          </h4>
+          <div className="grid grid-cols-1 gap-3 text-sm">
+            <p 
+              className="flex items-center gap-2"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              <div 
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--app-primary))' }}
+              />
+              "Show my meetings today"
+            </p>
+            <p 
+              className="flex items-center gap-2"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              <div 
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--app-primary))' }}
+              />
+              "What tasks do I have?"
+            </p>
+            <p 
+              className="flex items-center gap-2"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              <div 
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--app-primary))' }}
+              />
+              "Any missed calls?"
+            </p>
+            <p 
+              className="flex items-center gap-2"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              <div 
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--app-primary))' }}
+              />
+              "Check my messages"
+            </p>
+            <p 
+              className="flex items-center gap-2"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              <div 
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--app-primary))' }}
+              />
+              "Schedule a meeting"
+            </p>
+            <p 
+              className="flex items-center gap-2"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              <div 
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--app-primary))' }}
+              />
+              "Help me"
+            </p>
           </div>
         </CardContent>
       </Card>

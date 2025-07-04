@@ -49,18 +49,43 @@ const CallsView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20">
+    <div 
+      className="min-h-screen p-6 pb-24"
+      style={{ backgroundColor: 'hsl(var(--app-background))' }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Calls</h1>
-          <p className="text-purple-200">AI call management with Twilio</p>
+          <h1 
+            className="text-3xl font-bold mb-2"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            Calls
+          </h1>
+          <p 
+            className="text-lg"
+            style={{ color: 'hsl(var(--app-text-secondary))' }}
+          >
+            AI call management with Twilio
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-white">AI Assistant:</span>
+          <span 
+            className="text-sm font-medium"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            AI Assistant:
+          </span>
           <Button
             onClick={() => setAiCallsEnabled(!aiCallsEnabled)}
-            className={`${aiCallsEnabled ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 hover:bg-gray-600'}`}
+            className={`shadow-md hover:shadow-lg transition-all duration-200 ${
+              aiCallsEnabled 
+                ? 'hover:bg-green-600' 
+                : 'bg-gray-500 hover:bg-gray-600'
+            }`}
+            style={{
+              backgroundColor: aiCallsEnabled ? 'hsl(var(--app-accent))' : undefined
+            }}
           >
             {aiCallsEnabled ? 'ON' : 'OFF'}
           </Button>
@@ -68,34 +93,94 @@ const CallsView = () => {
       </div>
 
       {/* Twilio Configuration Status */}
-      <Card className={`${isConfigured ? 'bg-gradient-to-r from-green-500/20 to-blue-500/20' : 'bg-gradient-to-r from-red-500/20 to-orange-500/20'} backdrop-blur-lg border-white/20 text-white mb-6`}>
+      <Card 
+        className="shadow-lg border-0 mb-6" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          border: `1px solid ${isConfigured ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`,
+          boxShadow: isConfigured 
+            ? '0 10px 25px rgba(16, 185, 129, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+            : '0 10px 25px rgba(245, 158, 11, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+        }}
+      >
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="w-5 h-5" />
+          <CardTitle 
+            className="flex items-center gap-3 text-xl"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            <div 
+              className="p-2 rounded-lg"
+              style={{ 
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                border: '1px solid rgba(79, 70, 229, 0.2)'
+              }}
+            >
+              <Settings className="w-5 h-5" style={{ color: 'hsl(var(--app-primary))' }} />
+            </div>
             Twilio Voice API Status
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span>Voice API Status:</span>
-              <div className={`w-3 h-3 rounded-full ${isConfigured ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span style={{ color: 'hsl(var(--app-text-primary))' }}>Voice API Status:</span>
+              <div 
+                className={`w-3 h-3 rounded-full ${
+                  isConfigured ? 'bg-green-400' : 'bg-red-400'
+                }`}
+              />
             </div>
             <div className="flex items-center justify-between">
-              <span>Auto-answer calls:</span>
-              <div className={`w-3 h-3 rounded-full ${isConfigured && aiCallsEnabled ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span style={{ color: 'hsl(var(--app-text-primary))' }}>Auto-answer calls:</span>
+              <div 
+                className={`w-3 h-3 rounded-full ${
+                  isConfigured && aiCallsEnabled ? 'bg-green-400' : 'bg-red-400'
+                }`}
+              />
             </div>
             {isConfigured && (
-              <div className="text-sm bg-blue-500/10 p-3 rounded-lg">
-                <p><strong>Webhook URL:</strong></p>
-                <p className="font-mono text-xs break-all">{getWebhookUrl()}</p>
-                <p className="mt-2 text-blue-200">Configure this URL in your Twilio phone number settings.</p>
+              <div 
+                className="text-sm p-4 rounded-lg shadow-sm"
+                style={{ 
+                  backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                  border: '1px solid rgba(79, 70, 229, 0.2)'
+                }}
+              >
+                <p 
+                  className="font-semibold mb-2"
+                  style={{ color: 'hsl(var(--app-text-primary))' }}
+                >
+                  Webhook URL:
+                </p>
+                <p 
+                  className="font-mono text-xs break-all mb-2"
+                  style={{ color: 'hsl(var(--app-text-secondary))' }}
+                >
+                  {getWebhookUrl()}
+                </p>
+                <p style={{ color: 'hsl(var(--app-text-secondary))' }}>
+                  Configure this URL in your Twilio phone number settings.
+                </p>
               </div>
             )}
             {!isConfigured && (
-              <div className="text-sm bg-red-500/10 p-3 rounded-lg">
-                <p className="text-red-200">Twilio credentials not configured. Please set up:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
+              <div 
+                className="text-sm p-4 rounded-lg shadow-sm"
+                style={{ 
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)'
+                }}
+              >
+                <p 
+                  className="mb-2"
+                  style={{ color: 'hsl(var(--app-text-primary))' }}
+                >
+                  Twilio credentials not configured. Please set up:
+                </p>
+                <ul 
+                  className="list-disc list-inside space-y-1"
+                  style={{ color: 'hsl(var(--app-text-secondary))' }}
+                >
                   <li>TWILIO_ACCOUNT_SID</li>
                   <li>TWILIO_AUTH_TOKEN</li>
                   <li>TWILIO_PHONE_NUMBER</li>
@@ -108,37 +193,78 @@ const CallsView = () => {
 
       {/* Make Outbound Call */}
       {isConfigured && (
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mb-6">
+        <Card 
+          className="shadow-lg border-0 mb-6" 
+          style={{ 
+            backgroundColor: 'hsl(var(--app-surface))',
+            boxShadow: '0 10px 25px rgba(79, 70, 229, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+          }}
+        >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PhoneCall className="w-5 h-5 text-blue-300" />
+            <CardTitle 
+              className="flex items-center gap-3 text-xl"
+              style={{ color: 'hsl(var(--app-text-primary))' }}
+            >
+              <div 
+                className="p-2 rounded-lg"
+                style={{ 
+                  backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                  border: '1px solid rgba(79, 70, 229, 0.2)'
+                }}
+              >
+                <PhoneCall className="w-5 h-5" style={{ color: 'hsl(var(--app-primary))' }} />
+              </div>
               Make Outbound Call
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Phone Number</label>
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: 'hsl(var(--app-text-primary))' }}
+              >
+                Phone Number
+              </label>
               <Input
                 type="tel"
                 placeholder="+1234567890"
                 value={outboundNumber}
                 onChange={(e) => setOutboundNumber(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                className="shadow-sm border-gray-300 focus:ring-2 focus:border-transparent"
+                style={{
+                  backgroundColor: 'hsl(var(--app-surface))',
+                  borderColor: 'hsl(var(--border))',
+                  color: 'hsl(var(--app-text-primary))'
+                }}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Message</label>
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: 'hsl(var(--app-text-primary))' }}
+              >
+                Message
+              </label>
               <Input
                 type="text"
                 value={outboundMessage}
                 onChange={(e) => setOutboundMessage(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                className="shadow-sm border-gray-300 focus:ring-2 focus:border-transparent"
+                style={{
+                  backgroundColor: 'hsl(var(--app-surface))',
+                  borderColor: 'hsl(var(--border))',
+                  color: 'hsl(var(--app-text-primary))'
+                }}
               />
             </div>
             <Button
               onClick={handleMakeCall}
               disabled={twilioLoading || !outboundNumber.trim()}
-              className="bg-blue-500 hover:bg-blue-600"
+              className="shadow-md hover:shadow-lg transition-all duration-200"
+              style={{
+                backgroundColor: 'hsl(var(--app-primary))',
+                borderColor: 'hsl(var(--app-primary))'
+              }}
             >
               <Phone className="w-4 h-4 mr-2" />
               {twilioLoading ? 'Calling...' : 'Make Call'}
@@ -148,29 +274,62 @@ const CallsView = () => {
       )}
 
       {/* AI Call Status */}
-      <Card className="bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-lg border-white/20 text-white mb-6">
+      <Card 
+        className="shadow-lg border-0 mb-6" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          border: '1px solid rgba(16, 185, 129, 0.2)',
+          boxShadow: '0 10px 25px rgba(16, 185, 129, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+        }}
+      >
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mic className="w-5 h-5 text-green-300" />
+          <CardTitle 
+            className="flex items-center gap-3 text-xl"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            <div 
+              className="p-2 rounded-lg"
+              style={{ 
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.2)'
+              }}
+            >
+              <Mic className="w-5 h-5" style={{ color: 'hsl(var(--app-accent))' }} />
+            </div>
             AI Call Assistant Status
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span>Auto-answer when busy:</span>
-              <div className={`w-3 h-3 rounded-full ${aiCallsEnabled && isConfigured ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span style={{ color: 'hsl(var(--app-text-primary))' }}>Auto-answer when busy:</span>
+              <div 
+                className={`w-3 h-3 rounded-full ${
+                  aiCallsEnabled && isConfigured ? 'bg-green-400' : 'bg-red-400'
+                }`}
+              />
             </div>
             <div className="flex items-center justify-between">
-              <span>Voice recognition:</span>
-              <div className={`w-3 h-3 rounded-full ${isConfigured ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span style={{ color: 'hsl(var(--app-text-primary))' }}>Voice recognition:</span>
+              <div 
+                className={`w-3 h-3 rounded-full ${
+                  isConfigured ? 'bg-green-400' : 'bg-red-400'
+                }`}
+              />
             </div>
             <div className="flex items-center justify-between">
-              <span>Message transcription:</span>
-              <div className={`w-3 h-3 rounded-full ${isConfigured ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span style={{ color: 'hsl(var(--app-text-primary))' }}>Message transcription:</span>
+              <div 
+                className={`w-3 h-3 rounded-full ${
+                  isConfigured ? 'bg-green-400' : 'bg-red-400'
+                }`}
+              />
             </div>
           </div>
-          <p className="text-sm text-green-200 mt-4">
+          <p 
+            className="text-sm mt-4"
+            style={{ color: 'hsl(var(--app-text-secondary))' }}
+          >
             {aiCallsEnabled && isConfigured
               ? 'Your AI assistant will answer calls when you\'re unavailable and take detailed messages.'
               : 'AI call assistance requires Twilio configuration.'
@@ -180,49 +339,125 @@ const CallsView = () => {
       </Card>
 
       {/* Recent Calls */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
+      <Card 
+        className="shadow-lg border-0 mb-6" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          boxShadow: '0 10px 25px rgba(79, 70, 229, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+        }}
+      >
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="w-5 h-5 text-blue-300" />
+          <CardTitle 
+            className="flex items-center gap-3 text-xl"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            <div 
+              className="p-2 rounded-lg"
+              style={{ 
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                border: '1px solid rgba(79, 70, 229, 0.2)'
+              }}
+            >
+              <Phone className="w-5 h-5" style={{ color: 'hsl(var(--app-primary))' }} />
+            </div>
             Recent Calls
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {callsLoading ? (
-            <div className="text-center py-4">Loading calls...</div>
+            <div 
+              className="text-center py-8"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              Loading calls...
+            </div>
           ) : calls.length === 0 ? (
-            <div className="text-center py-4 text-gray-400">No calls yet</div>
+            <div 
+              className="text-center py-8"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              No calls yet
+            </div>
           ) : (
             calls.map((call) => (
-              <div key={call.id} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
-                <div className="flex items-center justify-center w-10 h-10 bg-white/10 rounded-full">
+              <div 
+                key={call.id} 
+                className="flex items-center gap-4 p-4 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm"
+                style={{ 
+                  backgroundColor: 'rgba(79, 70, 229, 0.05)',
+                  border: '1px solid rgba(79, 70, 229, 0.1)'
+                }}
+              >
+                <div 
+                  className="flex items-center justify-center w-12 h-12 rounded-full shadow-sm"
+                  style={{ backgroundColor: 'rgba(79, 70, 229, 0.1)' }}
+                >
                   {getCallIcon(call.call_type)}
                 </div>
                 
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">{call.contact_name}</h3>
-                    <span className="text-xs text-gray-400">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 
+                      className="font-semibold text-base"
+                      style={{ color: 'hsl(var(--app-text-primary))' }}
+                    >
+                      {call.contact_name}
+                    </h3>
+                    <span 
+                      className="text-xs"
+                      style={{ color: 'hsl(var(--app-text-secondary))' }}
+                    >
                       {new Date(call.call_time).toLocaleString()}
                     </span>
                   </div>
                   {call.phone_number && (
-                    <p className="text-sm text-gray-300">{call.phone_number}</p>
+                    <p 
+                      className="text-sm mb-1"
+                      style={{ color: 'hsl(var(--app-text-secondary))' }}
+                    >
+                      {call.phone_number}
+                    </p>
                   )}
                   {call.duration && (
-                    <p className="text-xs text-blue-300">Duration: {formatDuration(call.duration)}</p>
+                    <p className="text-xs text-blue-500 mb-1">
+                      Duration: {formatDuration(call.duration)}
+                    </p>
                   )}
                   {call.notes && (
-                    <p className="text-xs text-green-300 mt-1">🤖 {call.notes}</p>
+                    <p 
+                      className="text-xs mt-2 p-2 rounded-lg"
+                      style={{ 
+                        color: 'hsl(var(--app-accent))',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                      }}
+                    >
+                      🤖 {call.notes}
+                    </p>
                   )}
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="shadow-sm hover:shadow-md transition-all duration-200"
+                    style={{
+                      borderColor: 'hsl(var(--border))',
+                      color: 'hsl(var(--app-text-primary))'
+                    }}
+                  >
                     <Phone className="w-4 h-4" />
                   </Button>
                   {call.notes && (
-                    <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="shadow-sm hover:shadow-md transition-all duration-200"
+                      style={{
+                        borderColor: 'hsl(var(--border))',
+                        color: 'hsl(var(--app-text-primary))'
+                      }}
+                    >
                       <Volume2 className="w-4 h-4" />
                     </Button>
                   )}
@@ -234,30 +469,62 @@ const CallsView = () => {
       </Card>
 
       {/* Call Settings */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mt-6">
+      <Card 
+        className="shadow-lg border-0" 
+        style={{ 
+          backgroundColor: 'hsl(var(--app-surface))',
+          boxShadow: '0 10px 25px rgba(79, 70, 229, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+        }}
+      >
         <CardHeader>
-          <CardTitle>AI Call Settings</CardTitle>
+          <CardTitle 
+            className="text-xl"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            AI Call Settings
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <span>Auto-answer after rings:</span>
-            <select className="bg-white/10 border border-white/20 rounded px-3 py-1 text-white">
+            <span style={{ color: 'hsl(var(--app-text-primary))' }}>Auto-answer after rings:</span>
+            <select 
+              className="shadow-sm rounded-lg px-3 py-2 border"
+              style={{
+                backgroundColor: 'hsl(var(--app-surface))',
+                borderColor: 'hsl(var(--border))',
+                color: 'hsl(var(--app-text-primary))'
+              }}
+            >
               <option value="3">3 rings</option>
               <option value="4">4 rings</option>
               <option value="5">5 rings</option>
             </select>
           </div>
           <div className="flex items-center justify-between">
-            <span>Voice personality:</span>
-            <select className="bg-white/10 border border-white/20 rounded px-3 py-1 text-white">
+            <span style={{ color: 'hsl(var(--app-text-primary))' }}>Voice personality:</span>
+            <select 
+              className="shadow-sm rounded-lg px-3 py-2 border"
+              style={{
+                backgroundColor: 'hsl(var(--app-surface))',
+                borderColor: 'hsl(var(--border))',
+                color: 'hsl(var(--app-text-primary))'
+              }}
+            >
               <option value="alice">Alice (Female)</option>
               <option value="man">Man (Male)</option>
               <option value="woman">Woman (Female)</option>
             </select>
           </div>
           <div className="flex items-center justify-between">
-            <span>Language:</span>
-            <select className="bg-white/10 border border-white/20 rounded px-3 py-1 text-white">
+            <span style={{ color: 'hsl(var(--app-text-primary))' }}>Language:</span>
+            <select 
+              className="shadow-sm rounded-lg px-3 py-2 border"
+              style={{
+                backgroundColor: 'hsl(var(--app-surface))',
+                borderColor: 'hsl(var(--border))',
+                color: 'hsl(var(--app-text-primary))'
+              }}
+            >
               <option value="en">English</option>
               <option value="es">Spanish</option>
               <option value="fr">French</option>
