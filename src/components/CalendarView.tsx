@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Calendar, Clock, Plus, Users, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,23 +85,45 @@ const CalendarView = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20 flex items-center justify-center">
-        <div className="text-white text-xl">Loading calendar...</div>
+      <div 
+        className="min-h-screen p-4 pb-20 flex items-center justify-center"
+        style={{ backgroundColor: 'hsl(var(--app-background))' }}
+      >
+        <div 
+          className="text-xl"
+          style={{ color: 'hsl(var(--app-text-primary))' }}
+        >
+          Loading calendar...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20">
+    <div 
+      className="min-h-screen p-4 pb-20"
+      style={{ backgroundColor: 'hsl(var(--app-background))' }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Calendar</h1>
-          <p className="text-purple-200">Manage your schedule</p>
+          <h1 
+            className="text-2xl font-bold mb-1"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            Calendar
+          </h1>
+          <p style={{ color: 'hsl(var(--app-text-secondary))' }}>
+            Manage your schedule
+          </p>
         </div>
         <Button 
           onClick={() => setShowAddForm(true)}
-          className="bg-purple-500 hover:bg-purple-600"
+          className="shadow-sm"
+          style={{ 
+            backgroundColor: 'hsl(var(--app-primary))',
+            color: 'white'
+          }}
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Meeting
@@ -114,9 +137,14 @@ const CalendarView = () => {
 
       {/* Add Meeting Form */}
       {showAddForm && (
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mb-6">
+        <Card 
+          className="mb-6 border-0 shadow-sm"
+          style={{ backgroundColor: 'hsl(var(--app-surface))' }}
+        >
           <CardHeader>
-            <CardTitle>Schedule New Meeting</CardTitle>
+            <CardTitle style={{ color: 'hsl(var(--app-text-primary))' }}>
+              Schedule New Meeting
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -124,7 +152,7 @@ const CalendarView = () => {
                 placeholder="Meeting title"
                 value={newMeeting.title}
                 onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                className="border-gray-200"
                 required
               />
               
@@ -132,29 +160,39 @@ const CalendarView = () => {
                 placeholder="Description (optional)"
                 value={newMeeting.description}
                 onChange={(e) => setNewMeeting({ ...newMeeting, description: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                className="border-gray-200"
                 rows={3}
               />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Start Time</label>
+                  <label 
+                    className="block text-sm font-medium mb-1"
+                    style={{ color: 'hsl(var(--app-text-primary))' }}
+                  >
+                    Start Time
+                  </label>
                   <Input
                     type="datetime-local"
                     value={newMeeting.start_time}
                     onChange={(e) => setNewMeeting({ ...newMeeting, start_time: e.target.value })}
-                    className="bg-white/10 border-white/20 text-white"
+                    className="border-gray-200"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">End Time</label>
+                  <label 
+                    className="block text-sm font-medium mb-1"
+                    style={{ color: 'hsl(var(--app-text-primary))' }}
+                  >
+                    End Time
+                  </label>
                   <Input
                     type="datetime-local"
                     value={newMeeting.end_time}
                     onChange={(e) => setNewMeeting({ ...newMeeting, end_time: e.target.value })}
-                    className="bg-white/10 border-white/20 text-white"
+                    className="border-gray-200"
                     required
                   />
                 </div>
@@ -164,18 +202,25 @@ const CalendarView = () => {
                 placeholder="Location (optional)"
                 value={newMeeting.location}
                 onChange={(e) => setNewMeeting({ ...newMeeting, location: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                className="border-gray-200"
               />
 
               <Input
                 placeholder="Attendees (comma-separated emails)"
                 value={attendeesInput}
                 onChange={(e) => setAttendeesInput(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                className="border-gray-200"
               />
               
               <div className="flex gap-2">
-                <Button type="submit" className="bg-green-500 hover:bg-green-600">
+                <Button 
+                  type="submit" 
+                  className="shadow-sm"
+                  style={{ 
+                    backgroundColor: 'hsl(var(--app-accent))',
+                    color: 'white'
+                  }}
+                >
                   Schedule Meeting
                   {isConnected && <span className="text-xs ml-1">(+ Google Cal)</span>}
                 </Button>
@@ -183,7 +228,8 @@ const CalendarView = () => {
                   type="button"
                   variant="outline"
                   onClick={() => setShowAddForm(false)}
-                  className="border-white/20 text-white hover:bg-white/10"
+                  className="border-gray-200"
+                  style={{ color: 'hsl(var(--app-text-secondary))' }}
                 >
                   Cancel
                 </Button>
@@ -193,20 +239,36 @@ const CalendarView = () => {
         </Card>
       )}
 
-      {/* Today's Schedule */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white mb-6">
+      {/* Upcoming Meetings */}
+      <Card 
+        className="mb-6 border-0 shadow-sm"
+        style={{ backgroundColor: 'hsl(var(--app-surface))' }}
+      >
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-purple-300" />
+          <CardTitle 
+            className="flex items-center gap-2"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            <Calendar className="w-5 h-5" style={{ color: 'hsl(var(--app-primary))' }} />
             Upcoming Meetings
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {upcomingMeetings.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No upcoming meetings scheduled</p>
-              <p className="text-sm">Click "Add Meeting" to schedule one</p>
+            <div className="text-center py-8">
+              <Calendar 
+                className="w-12 h-12 mx-auto mb-3 opacity-30" 
+                style={{ color: 'hsl(var(--app-text-secondary))' }}
+              />
+              <p style={{ color: 'hsl(var(--app-text-secondary))' }}>
+                No upcoming meetings scheduled
+              </p>
+              <p 
+                className="text-sm mt-1"
+                style={{ color: 'hsl(var(--app-text-secondary))' }}
+              >
+                Click "Add Meeting" to schedule one
+              </p>
             </div>
           ) : (
             upcomingMeetings.map((meeting) => {
@@ -214,17 +276,38 @@ const CalendarView = () => {
               const endDate = new Date(meeting.end_time);
               
               return (
-                <div key={meeting.id} className="flex items-start gap-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
-                  <div className="w-4 h-4 rounded-full bg-purple-500 mt-1"></div>
+                <div 
+                  key={meeting.id} 
+                  className="flex items-start gap-4 p-4 rounded-lg hover:shadow-sm transition-all cursor-pointer"
+                  style={{ backgroundColor: 'rgba(79, 70, 229, 0.03)' }}
+                >
+                  <div 
+                    className="w-4 h-4 rounded-full mt-1"
+                    style={{ backgroundColor: 'hsl(var(--app-primary))' }}
+                  ></div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-lg">{meeting.title}</h3>
-                      <span className="text-sm bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                      <h3 
+                        className="font-semibold text-lg"
+                        style={{ color: 'hsl(var(--app-text-primary))' }}
+                      >
+                        {meeting.title}
+                      </h3>
+                      <span 
+                        className="text-sm px-2 py-1 rounded"
+                        style={{ 
+                          backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                          color: 'hsl(var(--app-primary))'
+                        }}
+                      >
                         {getDateLabel(startDate)}
                       </span>
                     </div>
                     
-                    <div className="flex items-center gap-4 mb-2 text-sm text-gray-300">
+                    <div 
+                      className="flex items-center gap-4 mb-2 text-sm"
+                      style={{ color: 'hsl(var(--app-text-secondary))' }}
+                    >
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
@@ -246,13 +329,25 @@ const CalendarView = () => {
                     </div>
                     
                     {meeting.description && (
-                      <p className="text-gray-400 text-sm mb-2">{meeting.description}</p>
+                      <p 
+                        className="text-sm mb-2"
+                        style={{ color: 'hsl(var(--app-text-secondary))' }}
+                      >
+                        {meeting.description}
+                      </p>
                     )}
                     
                     {meeting.attendees.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {meeting.attendees.map((attendee, index) => (
-                          <span key={index} className="px-2 py-1 bg-purple-500/20 rounded-full text-xs text-purple-200">
+                          <span 
+                            key={index} 
+                            className="px-2 py-1 rounded-full text-xs"
+                            style={{ 
+                              backgroundColor: 'rgba(167, 139, 250, 0.1)',
+                              color: 'hsl(var(--app-secondary))'
+                            }}
+                          >
                             {attendee}
                           </span>
                         ))}
@@ -263,7 +358,8 @@ const CalendarView = () => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="border-white/20 text-white hover:bg-white/10"
+                    className="border-gray-200 shadow-sm"
+                    style={{ color: 'hsl(var(--app-text-secondary))' }}
                   >
                     Join
                   </Button>
@@ -276,49 +372,117 @@ const CalendarView = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white hover:bg-white/20 transition-all cursor-pointer">
+        <Card 
+          className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer"
+          style={{ backgroundColor: 'hsl(var(--app-surface))' }}
+        >
           <CardContent className="p-4 text-center">
-            <Calendar className="w-8 h-8 text-blue-300 mx-auto mb-2" />
-            <h3 className="font-semibold">Schedule Meeting</h3>
-            <p className="text-sm text-blue-200">Find available time slots</p>
+            <Calendar 
+              className="w-8 h-8 mx-auto mb-2" 
+              style={{ color: 'hsl(var(--app-primary))' }}
+            />
+            <h3 
+              className="font-semibold mb-1"
+              style={{ color: 'hsl(var(--app-text-primary))' }}
+            >
+              Schedule Meeting
+            </h3>
+            <p 
+              className="text-sm"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              Find available time slots
+            </p>
           </CardContent>
         </Card>
         
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white hover:bg-white/20 transition-all cursor-pointer">
+        <Card 
+          className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer"
+          style={{ backgroundColor: 'hsl(var(--app-surface))' }}
+        >
           <CardContent className="p-4 text-center">
-            <Users className="w-8 h-8 text-green-300 mx-auto mb-2" />
-            <h3 className="font-semibold">Team Availability</h3>
-            <p className="text-sm text-green-200">Check team schedules</p>
+            <Users 
+              className="w-8 h-8 mx-auto mb-2" 
+              style={{ color: 'hsl(var(--app-accent))' }}
+            />
+            <h3 
+              className="font-semibold mb-1"
+              style={{ color: 'hsl(var(--app-text-primary))' }}
+            >
+              Team Availability
+            </h3>
+            <p 
+              className="text-sm"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
+              Check team schedules
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Calendar Integration Status */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
+      <Card 
+        className="border-0 shadow-sm"
+        style={{ backgroundColor: 'hsl(var(--app-surface))' }}
+      >
         <CardHeader>
-          <CardTitle className="text-lg">Calendar Sync Status</CardTitle>
+          <CardTitle 
+            className="text-lg"
+            style={{ color: 'hsl(var(--app-text-primary))' }}
+          >
+            Calendar Sync Status
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+          <div 
+            className="flex items-center justify-between p-3 rounded-lg"
+            style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)' }}
+          >
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-              <span>Google Calendar</span>
+              <div 
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--app-accent))' }}
+              ></div>
+              <span style={{ color: 'hsl(var(--app-text-primary))' }}>
+                Google Calendar
+              </span>
             </div>
-            <span className="text-sm text-green-200">Connected</span>
+            <span 
+              className="text-sm"
+              style={{ color: 'hsl(var(--app-accent))' }}
+            >
+              Connected
+            </span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+          <div 
+            className="flex items-center justify-between p-3 rounded-lg"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)' }}
+          >
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-              <span>Outlook Calendar</span>
+              <span style={{ color: 'hsl(var(--app-text-primary))' }}>
+                Outlook Calendar
+              </span>
             </div>
-            <span className="text-sm text-yellow-200">Syncing...</span>
+            <span className="text-sm text-yellow-600">Syncing...</span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+          <div 
+            className="flex items-center justify-between p-3 rounded-lg"
+            style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)' }}
+          >
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-              <span>iCloud Calendar</span>
+              <span style={{ color: 'hsl(var(--app-text-primary))' }}>
+                iCloud Calendar
+              </span>
             </div>
-            <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="border-gray-200 shadow-sm"
+              style={{ color: 'hsl(var(--app-text-secondary))' }}
+            >
               Connect
             </Button>
           </div>
