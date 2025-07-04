@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckSquare, Calendar, Lightbulb, Coffee } from 'lucide-react';
+import { CheckSquare, Calendar, MessageSquare, Phone } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useMessages } from '@/hooks/useMessages';
@@ -29,29 +29,29 @@ const QuickStats = () => {
   const stats = [
     {
       icon: CheckSquare,
-      label: 'Task Left',
+      label: 'Tasks Left',
       value: pendingTasks,
       iconColor: 'hsl(var(--app-primary))',
       bgColor: 'rgba(79, 70, 229, 0.1)'
     },
     {
       icon: Calendar,
-      label: 'Meetings',
+      label: 'Meetings Today',
       value: todaysMeetings,
       iconColor: 'hsl(var(--app-accent))',
       bgColor: 'rgba(16, 185, 129, 0.1)'
     },
     {
-      icon: Lightbulb,
-      label: 'New Ideas',
-      value: 0,
+      icon: MessageSquare,
+      label: 'Unread Messages',
+      value: unreadMessages,
       iconColor: 'hsl(var(--app-secondary))',
       bgColor: 'rgba(167, 139, 250, 0.1)'
     },
     {
-      icon: Coffee,
-      label: 'Coffee Breaks',
-      value: 2,
+      icon: Phone,
+      label: "Today's Calls",
+      value: todaysCalls,
       iconColor: '#F59E0B',
       bgColor: 'rgba(245, 158, 11, 0.1)'
     }
