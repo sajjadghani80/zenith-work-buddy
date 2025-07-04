@@ -9,54 +9,53 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 250 250% 98%;
-    --foreground: 215 25% 27%;
+    --background: 60 9% 98%;
+    --foreground: 240 6% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 27%;
+    --card-foreground: 240 6% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 27%;
+    --popover-foreground: 240 6% 11%;
 
-    --primary: 262 83% 58%;
+    --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 215 25% 27%;
+    --secondary: 252 77% 76%;
+    --secondary-foreground: 240 6% 11%;
 
     --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 240 4% 44%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 215 25% 27%;
+    --accent: 158 64% 52%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 262 83% 58%;
+    --ring: 239 84% 67%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-background: 60 9% 98%;
+    --sidebar-foreground: 240 6% 11%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 252 77% 76%;
+    --sidebar-accent-foreground: 240 6% 11%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 239 84% 67%;
 
     /* Custom app colors */
-    --app-purple: 262 83% 58%;
-    --app-green: 142 71% 45%;
-    --app-yellow: 45 93% 47%;
-    --app-blue: 217 91% 60%;
-    --app-orange: 25 95% 53%;
-    --app-red: 0 84% 60%;
-    --app-gray: 215 16% 47%;
-    --app-light-gray: 210 40% 96%;
+    --app-primary: 239 84% 67%;        /* #4F46E5 - Indigo */
+    --app-secondary: 252 77% 76%;      /* #A78BFA - Lavender */
+    --app-background: 60 9% 98%;       /* #FAFAF9 - Off White */
+    --app-surface: 0 0% 100%;          /* #FFFFFF - White */
+    --app-text-primary: 240 6% 11%;    /* #1C1C1E - Rich Black */
+    --app-text-secondary: 240 4% 44%;  /* #6E6E73 - Soft Gray */
+    --app-accent: 158 64% 52%;         /* #10B981 - Green */
   }
 
   .dark {
@@ -96,14 +95,16 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-medium;
+    @apply text-foreground font-medium;
+    background-color: hsl(var(--app-background));
+    color: hsl(var(--app-text-primary));
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
 }
 
 @layer utilities {
   .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--app-purple)), hsl(var(--app-blue)));
+    background: linear-gradient(135deg, hsl(var(--app-primary)), hsl(var(--app-secondary)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

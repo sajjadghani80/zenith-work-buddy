@@ -31,33 +31,29 @@ const QuickStats = () => {
       icon: CheckSquare,
       label: 'Task Left',
       value: pendingTasks,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      iconBg: 'bg-purple-100'
+      iconColor: 'hsl(var(--app-primary))',
+      bgColor: 'rgba(79, 70, 229, 0.1)'
     },
     {
       icon: Calendar,
       label: 'Meetings',
       value: todaysMeetings,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      iconBg: 'bg-green-100'
+      iconColor: 'hsl(var(--app-accent))',
+      bgColor: 'rgba(16, 185, 129, 0.1)'
     },
     {
       icon: Lightbulb,
       label: 'New Ideas',
       value: 0,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
-      iconBg: 'bg-yellow-100'
+      iconColor: 'hsl(var(--app-secondary))',
+      bgColor: 'rgba(167, 139, 250, 0.1)'
     },
     {
       icon: Coffee,
       label: 'Coffee Breaks',
       value: 2,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      iconBg: 'bg-blue-100'
+      iconColor: '#F59E0B',
+      bgColor: 'rgba(245, 158, 11, 0.1)'
     }
   ];
 
@@ -66,15 +62,32 @@ const QuickStats = () => {
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className={`${stat.bgColor} border-0 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+          <Card 
+            key={index} 
+            className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+            style={{ backgroundColor: 'hsl(var(--app-surface))' }}
+          >
             <CardContent className="p-6">
               <div className="flex flex-col items-center text-center space-y-3">
-                <div className={`p-3 rounded-full ${stat.iconBg}`}>
-                  <Icon className={`w-6 h-6 ${stat.color}`} />
+                <div 
+                  className="p-3 rounded-full"
+                  style={{ backgroundColor: stat.bgColor }}
+                >
+                  <Icon className="w-6 h-6" style={{ color: stat.iconColor }} />
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-gray-800 mb-1">{stat.value}</p>
-                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                  <p 
+                    className="text-3xl font-bold mb-1"
+                    style={{ color: 'hsl(var(--app-text-primary))' }}
+                  >
+                    {stat.value}
+                  </p>
+                  <p 
+                    className="text-sm font-medium"
+                    style={{ color: 'hsl(var(--app-text-secondary))' }}
+                  >
+                    {stat.label}
+                  </p>
                 </div>
               </div>
             </CardContent>

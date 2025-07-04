@@ -36,82 +36,157 @@ const ProfileSettings = () => {
       <SubscriptionPlans />
       
       {/* User Profile */}
-      <Card className="bg-white shadow-sm border-gray-100">
+      <Card className="shadow-sm" style={{ backgroundColor: 'hsl(var(--app-surface))' }}>
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-gray-800">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <User className="w-5 h-5 text-blue-600" />
+          <CardTitle className="flex items-center gap-3" style={{ color: 'hsl(var(--app-text-primary))' }}>
+            <div 
+              className="p-2 rounded-lg"
+              style={{ backgroundColor: 'rgba(79, 70, 229, 0.1)' }}
+            >
+              <User className="w-5 h-5" style={{ color: 'hsl(var(--app-primary))' }} />
             </div>
             Profile Information
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-blue-500 rounded-2xl flex items-center justify-center">
+            <div 
+              className="w-16 h-16 rounded-2xl flex items-center justify-center"
+              style={{ 
+                background: 'linear-gradient(135deg, hsl(var(--app-primary)), hsl(var(--app-secondary)))' 
+              }}
+            >
               <User className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-800">{user?.user_metadata?.full_name || 'User'}</h3>
-              <p className="text-gray-600">{user?.email}</p>
-              <p className="text-sm text-gray-500">Member since {new Date(user?.created_at || '').toLocaleDateString()}</p>
+              <h3 className="text-xl font-semibold" style={{ color: 'hsl(var(--app-text-primary))' }}>
+                {user?.user_metadata?.full_name || 'User'}
+              </h3>
+              <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{user?.email}</p>
+              <p className="text-sm" style={{ color: 'hsl(var(--app-text-secondary))' }}>
+                Member since {new Date(user?.created_at || '').toLocaleDateString()}
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Settings */}
-      <Card className="bg-white shadow-sm border-gray-100">
+      <Card className="shadow-sm" style={{ backgroundColor: 'hsl(var(--app-surface))' }}>
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-gray-800">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Settings className="w-5 h-5 text-green-600" />
+          <CardTitle className="flex items-center gap-3" style={{ color: 'hsl(var(--app-text-primary))' }}>
+            <div 
+              className="p-2 rounded-lg"
+              style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+            >
+              <Settings className="w-5 h-5" style={{ color: 'hsl(var(--app-accent))' }} />
             </div>
             Settings
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors">
+            <div 
+              className="flex items-center justify-between p-4 rounded-xl border hover:shadow-sm transition-all duration-200"
+              style={{ 
+                backgroundColor: 'rgba(110, 110, 115, 0.05)',
+                borderColor: 'rgba(110, 110, 115, 0.1)'
+              }}
+            >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Bell className="w-4 h-4 text-orange-600" />
+                <div 
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                >
+                  <Bell className="w-4 h-4" style={{ color: '#F59E0B' }} />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-800">Notifications</h4>
-                  <p className="text-sm text-gray-600">Manage your notification preferences</p>
+                  <h4 className="font-semibold" style={{ color: 'hsl(var(--app-text-primary))' }}>
+                    Notifications
+                  </h4>
+                  <p className="text-sm" style={{ color: 'hsl(var(--app-text-secondary))' }}>
+                    Manage your notification preferences
+                  </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="border-gray-200 text-gray-600 hover:bg-gray-50">
+              <Button 
+                variant="outline" 
+                size="sm"
+                style={{
+                  borderColor: 'rgba(110, 110, 115, 0.2)',
+                  color: 'hsl(var(--app-text-secondary))'
+                }}
+              >
                 Configure
               </Button>
             </div>
             
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors">
+            <div 
+              className="flex items-center justify-between p-4 rounded-xl border hover:shadow-sm transition-all duration-200"
+              style={{ 
+                backgroundColor: 'rgba(110, 110, 115, 0.05)',
+                borderColor: 'rgba(110, 110, 115, 0.1)'
+              }}
+            >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CalendarIcon className="w-4 h-4 text-green-600" />
+                <div 
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+                >
+                  <CalendarIcon className="w-4 h-4" style={{ color: 'hsl(var(--app-accent))' }} />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-800">Calendar Sync</h4>
-                  <p className="text-sm text-gray-600">Connect your external calendars</p>
+                  <h4 className="font-semibold" style={{ color: 'hsl(var(--app-text-primary))' }}>
+                    Calendar Sync
+                  </h4>
+                  <p className="text-sm" style={{ color: 'hsl(var(--app-text-secondary))' }}>
+                    Connect your external calendars
+                  </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="border-gray-200 text-gray-600 hover:bg-gray-50">
+              <Button 
+                variant="outline" 
+                size="sm"
+                style={{
+                  borderColor: 'rgba(110, 110, 115, 0.2)',
+                  color: 'hsl(var(--app-text-secondary))'
+                }}
+              >
                 Setup
               </Button>
             </div>
             
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors">
+            <div 
+              className="flex items-center justify-between p-4 rounded-xl border hover:shadow-sm transition-all duration-200"
+              style={{ 
+                backgroundColor: 'rgba(110, 110, 115, 0.05)',
+                borderColor: 'rgba(110, 110, 115, 0.1)'
+              }}
+            >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Shield className="w-4 h-4 text-purple-600" />
+                <div 
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: 'rgba(167, 139, 250, 0.1)' }}
+                >
+                  <Shield className="w-4 h-4" style={{ color: 'hsl(var(--app-secondary))' }} />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-800">Privacy</h4>
-                  <p className="text-sm text-gray-600">Control your data and privacy settings</p>
+                  <h4 className="font-semibold" style={{ color: 'hsl(var(--app-text-primary))' }}>
+                    Privacy
+                  </h4>
+                  <p className="text-sm" style={{ color: 'hsl(var(--app-text-secondary))' }}>
+                    Control your data and privacy settings
+                  </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="border-gray-200 text-gray-600 hover:bg-gray-50">
+              <Button 
+                variant="outline" 
+                size="sm"
+                style={{
+                  borderColor: 'rgba(110, 110, 115, 0.2)',
+                  color: 'hsl(var(--app-text-secondary))'
+                }}
+              >
                 Manage
               </Button>
             </div>
@@ -120,9 +195,9 @@ const ProfileSettings = () => {
       </Card>
 
       {/* Account Actions */}
-      <Card className="bg-white shadow-sm border-gray-100">
+      <Card className="shadow-sm" style={{ backgroundColor: 'hsl(var(--app-surface))' }}>
         <CardHeader className="pb-4">
-          <CardTitle className="text-gray-800">Account Actions</CardTitle>
+          <CardTitle style={{ color: 'hsl(var(--app-text-primary))' }}>Account Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <Button
