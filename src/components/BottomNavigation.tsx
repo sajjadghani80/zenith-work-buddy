@@ -18,8 +18,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-white/20 z-50">
-      <div className="flex items-center justify-around py-2">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 z-50 shadow-lg">
+      <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -28,16 +28,16 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex flex-col items-center gap-1 p-2 transition-all duration-200 ${
+              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
                 isActive 
-                  ? 'text-purple-300 scale-110' 
-                  : 'text-gray-400 hover:text-white'
+                  ? 'text-purple-600 bg-purple-50 scale-105' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="text-xs">{tab.label}</span>
+              <span className="text-xs font-medium truncate">{tab.label}</span>
               {isActive && (
-                <div className="w-1 h-1 bg-purple-400 rounded-full"></div>
+                <div className="w-1 h-1 bg-purple-600 rounded-full"></div>
               )}
             </button>
           );

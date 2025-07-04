@@ -14,74 +14,87 @@ const UpcomingMeetings = () => {
     return format(date, 'MMM dd');
   };
 
+  const getDateColor = (date: Date) => {
+    if (isToday(date)) return 'bg-green-100 text-green-700 border-green-200';
+    if (isTomorrow(date)) return 'bg-blue-100 text-blue-700 border-blue-200';
+    return 'bg-gray-100 text-gray-600 border-gray-200';
+  };
+
   const upcomingMeetings = meetings
     .filter(meeting => new Date(meeting.start_time) > new Date())
     .slice(0, 3);
 
   if (isLoading) {
     return (
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
+      <Card className="bg-white shadow-sm border-gray-100">
         <CardContent className="p-6">
-          <div className="text-center">Loading meetings...</div>
+          <div className="text-center text-gray-500">Loading meetings...</div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-green-300" />
-          Upcoming Meetings
+    <Card className="bg-white shadow-sm border-gray-100 hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3 text-gray-800">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <Calendar className="w-5 h-5 text-green-600" />
+          </div>
+          Upcoming Events
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {upcomingMeetings.map((meeting) => {
           const startDate = new Date(meeting.start_time);
           const endDate = new Date(meeting.end_time);
           
           return (
-            <div key={meeting.id} className="p-3 bg-white/5 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-semibold">{meeting.title}</h3>
-                <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">
-                  {getDateLabel(startDate)}
+            <div key={meeting.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors">
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-semibold text-gray-800">{meeting.title}</h3>
+                <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getDateColor(startDate)}`}>
+                  {format(startDate, 'MMM dd')}
                 </span>
               </div>
               
-              <div className="space-y-1 text-sm text-gray-300">
+              <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium">
+                    {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
+                  </span>
                 </div>
                 
                 {meeting.location && (
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    {meeting.location}
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span>{meeting.location}</span>
                   </div>
                 )}
                 
                 {meeting.attendees.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    {meeting.attendees.length} attendees
+                    <Users className="w-4 h-4 text-gray-400" />
+                    <span>{meeting.attendees.length} attendees</span>
                   </div>
                 )}
               </div>
               
               {meeting.description && (
-                <p className="text-sm text-gray-400 mt-2">{meeting.description}</p>
+                <p className="text-sm text-gray-500 mt-3 bg-white p-3 rounded-lg">
+                  {meeting.description}
+                </p>
               )}
             </div>
           );
         })}
 
         {upcomingMeetings.length === 0 && (
-          <div className="text-center py-6 text-gray-400">
-            <Calendar className="w-10 h-10 mx-auto mb-2 opacity-50" />
-            <p>No upcoming meetings</p>
+          <div className="text-center py-12 text-gray-400">
+            <Calendar className="w-16 h-16 mx-auto mb-4 opacity-30" />
+            <p className="text-lg font-medium mb-2">No upcoming events</p>
+            <p className="text-sm">Your schedule is clear!</p>
           </div>
         )}
       </CardContent>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckSquare, Calendar, MessageSquare, Phone } from 'lucide-react';
+import { CheckSquare, Calendar, Lightbulb, Coffee } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useMessages } from '@/hooks/useMessages';
@@ -29,31 +29,35 @@ const QuickStats = () => {
   const stats = [
     {
       icon: CheckSquare,
-      label: 'Pending Tasks',
+      label: 'Task Left',
       value: pendingTasks,
-      color: 'text-blue-300',
-      bgColor: 'bg-blue-500/20'
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      iconBg: 'bg-purple-100'
     },
     {
       icon: Calendar,
-      label: "Today's Meetings",
+      label: 'Meetings',
       value: todaysMeetings,
-      color: 'text-green-300',
-      bgColor: 'bg-green-500/20'
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      iconBg: 'bg-green-100'
     },
     {
-      icon: MessageSquare,
-      label: 'Unread Messages',
-      value: unreadMessages,
-      color: 'text-purple-300',
-      bgColor: 'bg-purple-500/20'
+      icon: Lightbulb,
+      label: 'New Ideas',
+      value: 0,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50',
+      iconBg: 'bg-yellow-100'
     },
     {
-      icon: Phone,
-      label: "Today's Calls",
-      value: todaysCalls,
-      color: 'text-orange-300',
-      bgColor: 'bg-orange-500/20'
+      icon: Coffee,
+      label: 'Coffee Breaks',
+      value: 2,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      iconBg: 'bg-blue-100'
     }
   ];
 
@@ -62,15 +66,15 @@ const QuickStats = () => {
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`w-5 h-5 ${stat.color}`} />
+          <Card key={index} className={`${stat.bgColor} border-0 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className={`p-3 rounded-full ${stat.iconBg}`}>
+                  <Icon className={`w-6 h-6 ${stat.color}`} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-sm text-gray-300">{stat.label}</p>
+                  <p className="text-3xl font-bold text-gray-800 mb-1">{stat.value}</p>
+                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
                 </div>
               </div>
             </CardContent>

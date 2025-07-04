@@ -10,19 +10,19 @@ const RecentMessages = () => {
 
   const getMessageIcon = (type: string) => {
     switch (type) {
-      case 'email': return <Mail className="w-4 h-4" />;
-      case 'chat': return <MessageCircle className="w-4 h-4" />;
-      case 'sms': return <Smartphone className="w-4 h-4" />;
-      default: return <MessageSquare className="w-4 h-4" />;
+      case 'email': return <Mail className="w-4 h-4 text-blue-600" />;
+      case 'chat': return <MessageCircle className="w-4 h-4 text-green-600" />;
+      case 'sms': return <Smartphone className="w-4 h-4 text-purple-600" />;
+      default: return <MessageSquare className="w-4 h-4 text-gray-600" />;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'border-l-red-500';
-      case 'medium': return 'border-l-yellow-500';
-      case 'low': return 'border-l-green-500';
-      default: return 'border-l-gray-500';
+      case 'high': return 'border-l-red-400 bg-red-50';
+      case 'medium': return 'border-l-yellow-400 bg-yellow-50';
+      case 'low': return 'border-l-green-400 bg-green-50';
+      default: return 'border-l-gray-300 bg-gray-50';
     }
   };
 
@@ -30,59 +30,61 @@ const RecentMessages = () => {
 
   if (isLoading) {
     return (
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
+      <Card className="bg-white shadow-sm border-gray-100">
         <CardContent className="p-6">
-          <div className="text-center">Loading messages...</div>
+          <div className="text-center text-gray-500">Loading messages...</div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20 text-white">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-purple-300" />
-          Recent Messages
+    <Card className="bg-white shadow-sm border-gray-100 hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3 text-gray-800">
+          <div className="p-2 bg-purple-100 rounded-lg">
+            <MessageSquare className="w-5 h-5 text-purple-600" />
+          </div>
+          Recent Chats
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {recentMessages.map((message) => (
           <div
             key={message.id}
-            className={`p-3 bg-white/5 rounded-lg border-l-4 cursor-pointer hover:bg-white/10 transition-colors ${getPriorityColor(message.priority)} ${
-              !message.is_read ? 'bg-white/10' : ''
+            className={`p-4 rounded-xl border-l-4 cursor-pointer hover:shadow-sm transition-all duration-200 ${getPriorityColor(message.priority)} ${
+              !message.is_read ? 'ring-2 ring-purple-100' : ''
             }`}
             onClick={() => !message.is_read && markAsRead.mutate(message.id)}
           >
             <div className="flex items-start gap-3">
-              <div className="text-gray-300 mt-1">
+              <div className="p-2 bg-white rounded-lg shadow-sm">
                 {getMessageIcon(message.message_type)}
               </div>
               
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className={`font-medium ${!message.is_read ? 'text-white' : 'text-gray-300'}`}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className={`font-semibold text-gray-800 ${!message.is_read ? 'text-purple-800' : ''}`}>
                     {message.sender_name}
                   </h3>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-500 font-medium">
                     {format(new Date(message.received_at), 'HH:mm')}
                   </span>
                 </div>
                 
-                <p className={`text-sm ${!message.is_read ? 'text-gray-200' : 'text-gray-400'}`}>
+                <p className={`text-sm leading-relaxed ${!message.is_read ? 'text-gray-800' : 'text-gray-600'}`}>
                   {message.content.length > 100 
                     ? `${message.content.substring(0, 100)}...` 
                     : message.content}
                 </p>
                 
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded capitalize">
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-xs bg-white text-gray-600 px-2 py-1 rounded-full border border-gray-200 capitalize font-medium">
                     {message.message_type}
                   </span>
                   {!message.is_read && (
-                    <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
-                      Unread
+                    <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full font-medium">
+                      New
                     </span>
                   )}
                 </div>
@@ -92,9 +94,12 @@ const RecentMessages = () => {
         ))}
 
         {recentMessages.length === 0 && (
-          <div className="text-center py-6 text-gray-400">
-            <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-50" />
-            <p>No messages yet</p>
+          <div className="text-center py-12 text-gray-400">
+            <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-2xl flex items-center justify-center">
+              <MessageSquare className="w-10 h-10 text-gray-300" />
+            </div>
+            <p className="text-lg font-medium mb-2">No new chats</p>
+            <p className="text-sm">Go talk to someone!</p>
           </div>
         )}
       </CardContent>

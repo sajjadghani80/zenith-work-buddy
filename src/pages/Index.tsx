@@ -21,10 +21,10 @@ const Index = () => {
         return <MessagesView />;
       case 'voice':
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-white">Voice Assistant</h1>
-              <p className="text-purple-200">Speak naturally to manage your day</p>
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50/30 p-6 pb-24">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Voice Assistant</h1>
+              <p className="text-gray-600 text-lg">Speak naturally to manage your day</p>
             </div>
             <VoiceAssistant />
           </div>
@@ -33,10 +33,10 @@ const Index = () => {
         return <CallsView />;
       case 'profile':
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-white">Profile & Settings</h1>
-              <p className="text-purple-200">Manage your account and preferences</p>
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50/30 p-6 pb-24">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Profile & Settings</h1>
+              <p className="text-gray-600 text-lg">Manage your account and preferences</p>
             </div>
             <ProfileSettings />
           </div>

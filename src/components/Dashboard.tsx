@@ -10,22 +10,22 @@ const Dashboard = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50/30 p-6 pb-24">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">
-          Good day, {user?.user_metadata?.full_name?.split(' ')[0] || 'there'}! 👋
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          Hello, {user?.user_metadata?.full_name?.split(' ')[0] || 'Muhammad'}! 👋
         </h1>
-        <p className="text-purple-200">Here's your productivity overview</p>
+        <p className="text-gray-600 text-lg">Let's get creative today!</p>
       </div>
 
       {/* Quick Stats */}
-      <div className="mb-6">
+      <div className="mb-8">
         <QuickStats />
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <TasksList />
         <UpcomingMeetings />
       </div>
