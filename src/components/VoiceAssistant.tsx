@@ -9,6 +9,7 @@ const VoiceAssistant = () => {
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [isSupported, setIsSupported] = useState(false);
+  const [error, setError] = useState('');
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -19,33 +20,75 @@ const VoiceAssistant = () => {
       
       // Initialize speech recognition
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.continuous = true; // Keep listening
+      recognition.interimResults = true; // Show interim results
       recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
       
       recognition.onstart = () => {
         console.log('Speech recognition started');
         setIsListening(true);
+        setError('');
+        setResponse('');
       };
       
       recognition.onresult = (event: any) => {
-        const speechResult = event.results[0][0].transcript;
-        console.log('Speech result:', speechResult);
-        setTranscript(speechResult);
+        let finalTranscript = '';
+        let interimTranscript = '';
         
-        // Generate AI response
-        const aiResponse = simulateVoiceResponse(speechResult);
-        setResponse(aiResponse);
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        console.log('Final transcript:', finalTranscript);
+        console.log('Interim transcript:', interimTranscript);
+        
+        if (finalTranscript) {
+          setTranscript(finalTranscript);
+          
+          // Generate AI response
+          const aiResponse = simulateVoiceResponse(finalTranscript);
+          setResponse(aiResponse);
+          
+          // Stop listening after getting a result
+          recognition.stop();
+        } else if (interimTranscript) {
+          setTranscript(interimTranscript + ' (listening...)');
+        }
       };
       
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        setIsListening(false);
+        
         if (event.error === 'not-allowed') {
-          setResponse('Microphone access denied. Please allow microphone access and try again.');
+          setError('Microphone access denied. Please allow microphone access and try again.');
+        } else if (event.error === 'no-speech') {
+          setError('No speech detected. Please speak louder and try again.');
+          // Automatically restart listening for no-speech errors
+          setTimeout(() => {
+            if (recognitionRef.current && isListening) {
+              try {
+                recognitionRef.current.start();
+                setError('');
+              } catch (e) {
+                console.log('Recognition restart failed:', e);
+              }
+            }
+          }, 1000);
+        } else if (event.error === 'audio-capture') {
+          setError('No microphone found. Please check your microphone connection.');
+        } else if (event.error === 'network') {
+          setError('Network error. Please check your internet connection.');
         } else {
-          setResponse('Speech recognition error. Please try again.');
+          setError(`Speech recognition error: ${event.error}. Please try again.`);
         }
+        
+        setIsListening(false);
       };
       
       recognition.onend = () => {
@@ -88,7 +131,7 @@ const VoiceAssistant = () => {
 
   const handleVoiceCommand = async () => {
     if (!isSupported) {
-      setResponse('Speech recognition is not supported in this browser. Please try Chrome, Edge, or Safari.');
+      setError('Speech recognition is not supported in this browser. Please try Chrome, Edge, or Safari.');
       return;
     }
 
@@ -106,6 +149,7 @@ const VoiceAssistant = () => {
         // Clear previous results
         setTranscript('');
         setResponse('');
+        setError('');
         
         // Start recognition
         if (recognitionRef.current) {
@@ -113,7 +157,7 @@ const VoiceAssistant = () => {
         }
       } catch (error) {
         console.error('Microphone access error:', error);
-        setResponse('Microphone access is required for voice commands. Please allow access and try again.');
+        setError('Microphone access is required for voice commands. Please allow access and try again.');
       }
     }
   };
@@ -152,17 +196,34 @@ const VoiceAssistant = () => {
           </div>
           
           <h3 className="text-xl font-semibold mb-2">
-            {isListening ? 'Listening...' : 'Tap to speak'}
+            {isListening ? 'Listening... Speak now!' : 'Tap to speak'}
           </h3>
           
           <p className="text-purple-200 text-sm">
             {isListening 
-              ? 'Speak now! Say something like "Show my meetings" or "What tasks do I have?"'
+              ? 'I\'m actively listening. Speak clearly and say something like "Show my meetings"'
               : 'Your AI assistant is ready to listen and help with scheduling, tasks, and more'
             }
           </p>
         </CardContent>
       </Card>
+
+      {/* Error Display */}
+      {error && (
+        <Card className="bg-red-500/20 backdrop-blur-lg border-red-300/20 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                <MicOff className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-semibold">Error:</h4>
+                <p className="text-red-200">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Transcript Display */}
       {transcript && (
