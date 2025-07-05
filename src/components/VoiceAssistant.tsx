@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Volume2, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,7 +40,7 @@ const VoiceAssistant = () => {
       setIsSupported(true);
       
       const recognition = new SpeechRecognition();
-      recognition.continuous = false; // Changed to false for better conversation flow
+      recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1;
