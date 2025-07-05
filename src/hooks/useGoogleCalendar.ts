@@ -17,9 +17,16 @@ interface GoogleCalendarEvent {
   attendees?: Array<{ email: string }>;
 }
 
+interface TimeSlot {
+  start: Date;
+  end: Date;
+  available: boolean;
+}
+
 export const useGoogleCalendar = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const { toast } = useToast();
 
   const initializeGoogleCalendar = useCallback(async () => {
@@ -86,6 +93,75 @@ export const useGoogleCalendar = () => {
     }
   }, [initializeGoogleCalendar, toast]);
 
+  const getAvailableTimeSlots = useCallback(async (date: Date) => {
+    if (!isConnected) {
+      toast({
+        title: "Not Connected",
+        description: "Please connect to Google Calendar first.",
+        variant: "destructive",
+      });
+      return [];
+    }
+
+    try {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(9, 0, 0, 0); // 9 AM
+      
+      const endOfDay = new Date(date);
+      endOfDay.setHours(17, 0, 0, 0); // 5 PM
+
+      // Get existing events for the day
+      const response = await window.gapi.client.calendar.events.list({
+        calendarId: 'primary',
+        timeMin: startOfDay.toISOString(),
+        timeMax: endOfDay.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime'
+      });
+
+      const existingEvents = response.result.items || [];
+      
+      // Generate all possible 30-minute slots
+      const allSlots: TimeSlot[] = [];
+      const current = new Date(startOfDay);
+      
+      while (current < endOfDay) {
+        const slotEnd = new Date(current.getTime() + 30 * 60 * 1000); // 30 minutes
+        
+        // Check if this slot conflicts with existing events
+        const isAvailable = !existingEvents.some((event: any) => {
+          if (!event.start?.dateTime || !event.end?.dateTime) return false;
+          
+          const eventStart = new Date(event.start.dateTime);
+          const eventEnd = new Date(event.end.dateTime);
+          
+          // Check for overlap
+          return (current < eventEnd && slotEnd > eventStart);
+        });
+        
+        allSlots.push({
+          start: new Date(current),
+          end: new Date(slotEnd),
+          available: isAvailable
+        });
+        
+        current.setTime(current.getTime() + 30 * 60 * 1000); // Move to next 30-minute slot
+      }
+      
+      setAvailableSlots(allSlots);
+      return allSlots;
+      
+    } catch (error) {
+      console.error('Failed to get available time slots:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch available time slots.",
+        variant: "destructive",
+      });
+      return [];
+    }
+  }, [isConnected, toast]);
+
   const createGoogleCalendarEvent = useCallback(async (event: GoogleCalendarEvent) => {
     if (!isConnected) {
       toast({
@@ -122,8 +198,10 @@ export const useGoogleCalendar = () => {
   return {
     isConnected,
     isLoading,
+    availableSlots,
     connectToGoogleCalendar,
     createGoogleCalendarEvent,
+    getAvailableTimeSlots,
     initializeGoogleCalendar
   };
 };

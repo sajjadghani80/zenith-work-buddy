@@ -1,14 +1,15 @@
-
 import React, { useState } from 'react';
 import { Calendar, Clock, Plus, Users, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { format, isToday, isTomorrow } from 'date-fns';
 import GoogleCalendarSync from './GoogleCalendarSync';
+import AvailableTimeSlots from './AvailableTimeSlots';
 
 const CalendarView = () => {
   const { meetings, isLoading, createMeeting } = useMeetings();
@@ -135,359 +136,254 @@ const CalendarView = () => {
         <GoogleCalendarSync />
       </div>
 
-      {/* Add Meeting Form */}
-      {showAddForm && (
-        <Card 
-          className="mb-6 border-0 shadow-sm"
-          style={{ backgroundColor: 'hsl(var(--app-surface))' }}
-        >
-          <CardHeader>
-            <CardTitle style={{ color: 'hsl(var(--app-text-primary))' }}>
-              Schedule New Meeting
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                placeholder="Meeting title"
-                value={newMeeting.title}
-                onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })}
-                className="border-gray-200"
-                required
-              />
-              
-              <Textarea
-                placeholder="Description (optional)"
-                value={newMeeting.description}
-                onChange={(e) => setNewMeeting({ ...newMeeting, description: e.target.value })}
-                className="border-gray-200"
-                rows={3}
-              />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label 
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: 'hsl(var(--app-text-primary))' }}
-                  >
-                    Start Time
-                  </label>
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="schedule" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="schedule">Available Slots</TabsTrigger>
+          <TabsTrigger value="meetings">My Meetings</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="schedule" className="space-y-6">
+          <AvailableTimeSlots />
+        </TabsContent>
+
+        <TabsContent value="meetings" className="space-y-6">
+          {/* Add Meeting Form */}
+          {showAddForm && (
+            <Card 
+              className="border-0 shadow-sm"
+              style={{ backgroundColor: 'hsl(var(--app-surface))' }}
+            >
+              <CardHeader>
+                <CardTitle style={{ color: 'hsl(var(--app-text-primary))' }}>
+                  Schedule New Meeting
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <Input
-                    type="datetime-local"
-                    value={newMeeting.start_time}
-                    onChange={(e) => setNewMeeting({ ...newMeeting, start_time: e.target.value })}
+                    placeholder="Meeting title"
+                    value={newMeeting.title}
+                    onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })}
                     className="border-gray-200"
                     required
                   />
-                </div>
-                
-                <div>
-                  <label 
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: 'hsl(var(--app-text-primary))' }}
-                  >
-                    End Time
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={newMeeting.end_time}
-                    onChange={(e) => setNewMeeting({ ...newMeeting, end_time: e.target.value })}
+                  
+                  <Textarea
+                    placeholder="Description (optional)"
+                    value={newMeeting.description}
+                    onChange={(e) => setNewMeeting({ ...newMeeting, description: e.target.value })}
                     className="border-gray-200"
-                    required
+                    rows={3}
                   />
-                </div>
-              </div>
-              
-              <Input
-                placeholder="Location (optional)"
-                value={newMeeting.location}
-                onChange={(e) => setNewMeeting({ ...newMeeting, location: e.target.value })}
-                className="border-gray-200"
-              />
-
-              <Input
-                placeholder="Attendees (comma-separated emails)"
-                value={attendeesInput}
-                onChange={(e) => setAttendeesInput(e.target.value)}
-                className="border-gray-200"
-              />
-              
-              <div className="flex gap-2">
-                <Button 
-                  type="submit" 
-                  className="shadow-sm"
-                  style={{ 
-                    backgroundColor: 'hsl(var(--app-accent))',
-                    color: 'white'
-                  }}
-                >
-                  Schedule Meeting
-                  {isConnected && <span className="text-xs ml-1">(+ Google Cal)</span>}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowAddForm(false)}
-                  className="border-gray-200"
-                  style={{ color: 'hsl(var(--app-text-secondary))' }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Upcoming Meetings */}
-      <Card 
-        className="mb-6 border-0 shadow-sm"
-        style={{ backgroundColor: 'hsl(var(--app-surface))' }}
-      >
-        <CardHeader>
-          <CardTitle 
-            className="flex items-center gap-2"
-            style={{ color: 'hsl(var(--app-text-primary))' }}
-          >
-            <Calendar className="w-5 h-5" style={{ color: 'hsl(var(--app-primary))' }} />
-            Upcoming Meetings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {upcomingMeetings.length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar 
-                className="w-12 h-12 mx-auto mb-3 opacity-30" 
-                style={{ color: 'hsl(var(--app-text-secondary))' }}
-              />
-              <p style={{ color: 'hsl(var(--app-text-secondary))' }}>
-                No upcoming meetings scheduled
-              </p>
-              <p 
-                className="text-sm mt-1"
-                style={{ color: 'hsl(var(--app-text-secondary))' }}
-              >
-                Click "Add Meeting" to schedule one
-              </p>
-            </div>
-          ) : (
-            upcomingMeetings.map((meeting) => {
-              const startDate = new Date(meeting.start_time);
-              const endDate = new Date(meeting.end_time);
-              
-              return (
-                <div 
-                  key={meeting.id} 
-                  className="flex items-start gap-4 p-4 rounded-lg hover:shadow-sm transition-all cursor-pointer"
-                  style={{ backgroundColor: 'rgba(79, 70, 229, 0.03)' }}
-                >
-                  <div 
-                    className="w-4 h-4 rounded-full mt-1"
-                    style={{ backgroundColor: 'hsl(var(--app-primary))' }}
-                  ></div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 
-                        className="font-semibold text-lg"
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label 
+                        className="block text-sm font-medium mb-1"
                         style={{ color: 'hsl(var(--app-text-primary))' }}
                       >
-                        {meeting.title}
-                      </h3>
-                      <span 
-                        className="text-sm px-2 py-1 rounded"
-                        style={{ 
-                          backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                          color: 'hsl(var(--app-primary))'
-                        }}
-                      >
-                        {getDateLabel(startDate)}
-                      </span>
+                        Start Time
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        value={newMeeting.start_time}
+                        onChange={(e) => setNewMeeting({ ...newMeeting, start_time: e.target.value })}
+                        className="border-gray-200"
+                        required
+                      />
                     </div>
                     
-                    <div 
-                      className="flex items-center gap-4 mb-2 text-sm"
-                      style={{ color: 'hsl(var(--app-text-secondary))' }}
-                    >
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
-                      </div>
-                      
-                      {meeting.attendees.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          {meeting.attendees.length} attendees
-                        </div>
-                      )}
-                      
-                      {meeting.location && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {meeting.location}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {meeting.description && (
-                      <p 
-                        className="text-sm mb-2"
-                        style={{ color: 'hsl(var(--app-text-secondary))' }}
+                    <div>
+                      <label 
+                        className="block text-sm font-medium mb-1"
+                        style={{ color: 'hsl(var(--app-text-primary))' }}
                       >
-                        {meeting.description}
-                      </p>
-                    )}
-                    
-                    {meeting.attendees.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {meeting.attendees.map((attendee, index) => (
-                          <span 
-                            key={index} 
-                            className="px-2 py-1 rounded-full text-xs"
-                            style={{ 
-                              backgroundColor: 'rgba(167, 139, 250, 0.1)',
-                              color: 'hsl(var(--app-secondary))'
-                            }}
-                          >
-                            {attendee}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                        End Time
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        value={newMeeting.end_time}
+                        onChange={(e) => setNewMeeting({ ...newMeeting, end_time: e.target.value })}
+                        className="border-gray-200"
+                        required
+                      />
+                    </div>
                   </div>
                   
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="border-gray-200 shadow-sm"
+                  <Input
+                    placeholder="Location (optional)"
+                    value={newMeeting.location}
+                    onChange={(e) => setNewMeeting({ ...newMeeting, location: e.target.value })}
+                    className="border-gray-200"
+                  />
+
+                  <Input
+                    placeholder="Attendees (comma-separated emails)"
+                    value={attendeesInput}
+                    onChange={(e) => setAttendeesInput(e.target.value)}
+                    className="border-gray-200"
+                  />
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      type="submit" 
+                      className="shadow-sm"
+                      style={{ 
+                        backgroundColor: 'hsl(var(--app-accent))',
+                        color: 'white'
+                      }}
+                    >
+                      Schedule Meeting
+                      {isConnected && <span className="text-xs ml-1">(+ Google Cal)</span>}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowAddForm(false)}
+                      className="border-gray-200"
+                      style={{ color: 'hsl(var(--app-text-secondary))' }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Upcoming Meetings */}
+          <Card 
+            className="border-0 shadow-sm"
+            style={{ backgroundColor: 'hsl(var(--app-surface))' }}
+          >
+            <CardHeader>
+              <CardTitle 
+                className="flex items-center gap-2"
+                style={{ color: 'hsl(var(--app-text-primary))' }}
+              >
+                <Calendar className="w-5 h-5" style={{ color: 'hsl(var(--app-primary))' }} />
+                Upcoming Meetings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {upcomingMeetings.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar 
+                    className="w-12 h-12 mx-auto mb-3 opacity-30" 
+                    style={{ color: 'hsl(var(--app-text-secondary))' }}
+                  />
+                  <p style={{ color: 'hsl(var(--app-text-secondary))' }}>
+                    No upcoming meetings scheduled
+                  </p>
+                  <p 
+                    className="text-sm mt-1"
                     style={{ color: 'hsl(var(--app-text-secondary))' }}
                   >
-                    Join
-                  </Button>
+                    Use the "Available Slots" tab to schedule meetings
+                  </p>
                 </div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <Card 
-          className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer"
-          style={{ backgroundColor: 'hsl(var(--app-surface))' }}
-        >
-          <CardContent className="p-4 text-center">
-            <Calendar 
-              className="w-8 h-8 mx-auto mb-2" 
-              style={{ color: 'hsl(var(--app-primary))' }}
-            />
-            <h3 
-              className="font-semibold mb-1"
-              style={{ color: 'hsl(var(--app-text-primary))' }}
-            >
-              Schedule Meeting
-            </h3>
-            <p 
-              className="text-sm"
-              style={{ color: 'hsl(var(--app-text-secondary))' }}
-            >
-              Find available time slots
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card 
-          className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer"
-          style={{ backgroundColor: 'hsl(var(--app-surface))' }}
-        >
-          <CardContent className="p-4 text-center">
-            <Users 
-              className="w-8 h-8 mx-auto mb-2" 
-              style={{ color: 'hsl(var(--app-accent))' }}
-            />
-            <h3 
-              className="font-semibold mb-1"
-              style={{ color: 'hsl(var(--app-text-primary))' }}
-            >
-              Team Availability
-            </h3>
-            <p 
-              className="text-sm"
-              style={{ color: 'hsl(var(--app-text-secondary))' }}
-            >
-              Check team schedules
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Calendar Integration Status */}
-      <Card 
-        className="border-0 shadow-sm"
-        style={{ backgroundColor: 'hsl(var(--app-surface))' }}
-      >
-        <CardHeader>
-          <CardTitle 
-            className="text-lg"
-            style={{ color: 'hsl(var(--app-text-primary))' }}
-          >
-            Calendar Sync Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div 
-            className="flex items-center justify-between p-3 rounded-lg"
-            style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: 'hsl(var(--app-accent))' }}
-              ></div>
-              <span style={{ color: 'hsl(var(--app-text-primary))' }}>
-                Google Calendar
-              </span>
-            </div>
-            <span 
-              className="text-sm"
-              style={{ color: 'hsl(var(--app-accent))' }}
-            >
-              Connected
-            </span>
-          </div>
-          <div 
-            className="flex items-center justify-between p-3 rounded-lg"
-            style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-              <span style={{ color: 'hsl(var(--app-text-primary))' }}>
-                Outlook Calendar
-              </span>
-            </div>
-            <span className="text-sm text-yellow-600">Syncing...</span>
-          </div>
-          <div 
-            className="flex items-center justify-between p-3 rounded-lg"
-            style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-              <span style={{ color: 'hsl(var(--app-text-primary))' }}>
-                iCloud Calendar
-              </span>
-            </div>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="border-gray-200 shadow-sm"
-              style={{ color: 'hsl(var(--app-text-secondary))' }}
-            >
-              Connect
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              ) : (
+                upcomingMeetings.map((meeting) => {
+                  const startDate = new Date(meeting.start_time);
+                  const endDate = new Date(meeting.end_time);
+                  
+                  return (
+                    <div 
+                      key={meeting.id} 
+                      className="flex items-start gap-4 p-4 rounded-lg hover:shadow-sm transition-all cursor-pointer"
+                      style={{ backgroundColor: 'rgba(79, 70, 229, 0.03)' }}
+                    >
+                      <div 
+                        className="w-4 h-4 rounded-full mt-1"
+                        style={{ backgroundColor: 'hsl(var(--app-primary))' }}
+                      ></div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 
+                            className="font-semibold text-lg"
+                            style={{ color: 'hsl(var(--app-text-primary))' }}
+                          >
+                            {meeting.title}
+                          </h3>
+                          <span 
+                            className="text-sm px-2 py-1 rounded"
+                            style={{ 
+                              backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                              color: 'hsl(var(--app-primary))'
+                            }}
+                          >
+                            {getDateLabel(startDate)}
+                          </span>
+                        </div>
+                        
+                        <div 
+                          className="flex items-center gap-4 mb-2 text-sm"
+                          style={{ color: 'hsl(var(--app-text-secondary))' }}
+                        >
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {format(startDate, 'HH:mm')} - {format(endDate, 'HH:mm')}
+                          </div>
+                          
+                          {meeting.attendees.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              {meeting.attendees.length} attendees
+                            </div>
+                          )}
+                          
+                          {meeting.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {meeting.location}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {meeting.description && (
+                          <p 
+                            className="text-sm mb-2"
+                            style={{ color: 'hsl(var(--app-text-secondary))' }}
+                          >
+                            {meeting.description}
+                          </p>
+                        )}
+                        
+                        {meeting.attendees.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {meeting.attendees.map((attendee, index) => (
+                              <span 
+                                key={index} 
+                                className="px-2 py-1 rounded-full text-xs"
+                                style={{ 
+                                  backgroundColor: 'rgba(167, 139, 250, 0.1)',
+                                  color: 'hsl(var(--app-secondary))'
+                                }}
+                              >
+                                {attendee}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-gray-200 shadow-sm"
+                        style={{ color: 'hsl(var(--app-text-secondary))' }}
+                      >
+                        Join
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
