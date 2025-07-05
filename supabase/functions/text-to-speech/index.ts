@@ -16,14 +16,23 @@ serve(async (req) => {
     const { text, voice } = await req.json()
 
     if (!text) {
+      console.error('No text provided')
       throw new Error('Text is required')
     }
+
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openaiApiKey) {
+      console.error('OpenAI API key not found')
+      throw new Error('OpenAI API key not configured')
+    }
+
+    console.log('Converting text to speech:', text.substring(0, 50) + '...')
 
     // Generate speech from text using OpenAI
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -35,8 +44,9 @@ serve(async (req) => {
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error?.message || 'Failed to generate speech')
+      const errorText = await response.text()
+      console.error('OpenAI API error:', response.status, errorText)
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
     }
 
     // Convert audio buffer to base64
@@ -45,6 +55,8 @@ serve(async (req) => {
       String.fromCharCode(...new Uint8Array(arrayBuffer))
     )
 
+    console.log('Successfully generated speech, audio length:', base64Audio.length)
+
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
       {
@@ -52,6 +64,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('Error in text-to-speech function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {

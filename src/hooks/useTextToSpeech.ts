@@ -20,10 +20,17 @@ export const useTextToSpeech = () => {
       });
 
       if (functionError) {
-        throw new Error(functionError.message);
+        console.error('Supabase function error:', functionError);
+        throw new Error(functionError.message || 'Function invocation failed');
       }
 
-      if (!data?.audioContent) {
+      if (!data) {
+        console.error('No data received from function');
+        throw new Error('No response from text-to-speech function');
+      }
+
+      if (!data.audioContent) {
+        console.error('No audio content in response:', data);
         throw new Error('No audio content received');
       }
 
@@ -65,9 +72,10 @@ export const useTextToSpeech = () => {
 
     } catch (error) {
       console.error('Text-to-speech error:', error);
-      setError(error instanceof Error ? error.message : 'Speech generation failed');
+      const errorMessage = error instanceof Error ? error.message : 'Speech generation failed';
+      setError(errorMessage);
       setIsSpeaking(false);
-      throw error;
+      throw new Error(errorMessage);
     }
   };
 
