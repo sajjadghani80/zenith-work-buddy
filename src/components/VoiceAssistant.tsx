@@ -1,8 +1,12 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useTasks } from '@/hooks/useTasks';
+import { useMeetings } from '@/hooks/useMeetings';
+import { useMessages } from '@/hooks/useMessages';
+import { useCalls } from '@/hooks/useCalls';
+import { format, isToday } from 'date-fns';
 
 interface ConversationEntry {
   timestamp: Date;
@@ -18,6 +22,12 @@ const VoiceAssistant = () => {
   const [error, setError] = useState('');
   const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
   const recognitionRef = useRef<any>(null);
+
+  // Get real data from hooks
+  const { tasks } = useTasks();
+  const { meetings } = useMeetings();
+  const { messages } = useMessages();
+  const { calls } = useCalls();
 
   useEffect(() => {
     // Check if Web Speech API is supported
@@ -58,8 +68,13 @@ const VoiceAssistant = () => {
         if (finalTranscript) {
           setTranscript(finalTranscript);
           
-          // Generate AI response with context
-          const aiResponse = simulateVoiceResponseWithContext(finalTranscript, conversationHistory);
+          // Generate AI response with real data
+          const aiResponse = generateSmartResponse(finalTranscript, conversationHistory, {
+            tasks,
+            meetings,
+            messages,
+            calls
+          });
           setResponse(aiResponse);
           
           // Add to conversation history
@@ -119,9 +134,9 @@ const VoiceAssistant = () => {
         recognitionRef.current.abort();
       }
     };
-  }, [conversationHistory]);
+  }, [conversationHistory, tasks, meetings, messages, calls]);
 
-  const simulateVoiceResponseWithContext = (userInput: string, history: ConversationEntry[]) => {
+  const generateSmartResponse = (userInput: string, history: ConversationEntry[], realData: any) => {
     const lowercaseInput = userInput.toLowerCase();
     
     // Build context from recent conversation
@@ -131,7 +146,18 @@ const VoiceAssistant = () => {
     
     console.log('Conversation context:', recentContext);
     
-    // Context-aware responses
+    // Get real data counts
+    const pendingTasks = realData.tasks?.filter((task: any) => !task.completed) || [];
+    const todaysTasks = pendingTasks.filter((task: any) => 
+      task.due_date ? isToday(new Date(task.due_date)) : false
+    );
+    const todaysMeetings = realData.meetings?.filter((meeting: any) =>
+      isToday(new Date(meeting.start_time))
+    ) || [];
+    const unreadMessages = realData.messages?.filter((msg: any) => !msg.is_read) || [];
+    const missedCalls = realData.calls?.filter((call: any) => call.call_type === 'missed') || [];
+    
+    // Context-aware responses with real data
     if (lowercaseInput.includes('that') || lowercaseInput.includes('it') || lowercaseInput.includes('them')) {
       const lastEntry = history[history.length - 1];
       if (lastEntry) {
@@ -143,28 +169,34 @@ const VoiceAssistant = () => {
             return 'I can help you cancel those meetings. Which specific meeting would you like me to cancel?';
           }
           if (lowercaseInput.includes('details') || lowercaseInput.includes('more')) {
-            return 'Here are more details about your meetings: Meeting 1 is with the marketing team at 2 PM, Meeting 2 is a client call at 4 PM, and Meeting 3 is the weekly standup at 5 PM.';
+            if (todaysMeetings.length > 0) {
+              const meetingDetails = todaysMeetings.map((meeting: any, index: number) => 
+                `Meeting ${index + 1}: ${meeting.title} at ${format(new Date(meeting.start_time), 'h:mm a')}`
+              ).join(', ');
+              return `Here are your meeting details: ${meetingDetails}`;
+            }
+            return 'You don\'t have any meetings scheduled for today.';
           }
         }
         
         if (lastEntry.userInput.toLowerCase().includes('task') || lastEntry.aiResponse.toLowerCase().includes('task')) {
           if (lowercaseInput.includes('prioritize') || lowercaseInput.includes('organize')) {
-            return 'I\'ll prioritize those tasks for you: 1. Complete project proposal (urgent), 2. Review budget report (high), 3. Team meeting prep (medium), 4. Email follow-ups (low), 5. Update documentation (low).';
+            if (pendingTasks.length > 0) {
+              const highPriorityTasks = pendingTasks.filter((t: any) => t.priority === 'high');
+              const mediumPriorityTasks = pendingTasks.filter((t: any) => t.priority === 'medium');
+              const lowPriorityTasks = pendingTasks.filter((t: any) => t.priority === 'low');
+              
+              let priorityResponse = 'Here\'s your task priority breakdown: ';
+              if (highPriorityTasks.length > 0) priorityResponse += `${highPriorityTasks.length} high priority, `;
+              if (mediumPriorityTasks.length > 0) priorityResponse += `${mediumPriorityTasks.length} medium priority, `;
+              if (lowPriorityTasks.length > 0) priorityResponse += `${lowPriorityTasks.length} low priority tasks. `;
+              
+              return priorityResponse + 'Focus on high priority tasks first!';
+            }
+            return 'You don\'t have any pending tasks to prioritize.';
           }
           if (lowercaseInput.includes('complete') || lowercaseInput.includes('done')) {
-            return 'Great! I\'ll mark those tasks as completed. Which specific task have you finished?';
-          }
-        }
-        
-        if (lastEntry.userInput.toLowerCase().includes('call') || lastEntry.aiResponse.toLowerCase().includes('call')) {
-          if (lowercaseInput.includes('call back') || lowercaseInput.includes('return')) {
-            return 'I\'ll help you return those missed calls. The first one is from John Smith at 555-0123, and the second is from Sarah Johnson at 555-0456. Which one would you like to call first?';
-          }
-        }
-        
-        if (lastEntry.userInput.toLowerCase().includes('message') || lastEntry.aiResponse.toLowerCase().includes('message')) {
-          if (lowercaseInput.includes('read') || lowercaseInput.includes('show')) {
-            return 'Here\'s a summary of those messages: 3 are project updates from your team, 2 are client inquiries, 2 are meeting confirmations, and 1 is a reminder about the deadline. Would you like me to read any specific ones?';
+            return 'Great! Which specific task have you completed? I can help you mark it as done.';
           }
         }
       }
@@ -172,34 +204,64 @@ const VoiceAssistant = () => {
       return `Based on our previous conversation about "${lastEntry?.userInput || 'your request'}", I can help you with that. What specifically would you like me to do?`;
     }
     
-    // Regular responses with context awareness
-    const responses = {
-      'schedule': history.some(h => h.userInput.toLowerCase().includes('meeting')) 
-        ? 'Since we were just discussing your meetings, would you like to schedule a new one or modify an existing meeting?' 
-        : 'I can help you schedule a meeting. What time works best for you?',
-      'meeting': 'You have 3 meetings today: Marketing team at 2 PM, Client call at 4 PM, and Weekly standup at 5 PM. Would you like me to show you more details?',
-      'tasks': 'You have 5 pending tasks. Shall I prioritize them for you?',
-      'task': 'You have 5 pending tasks. Shall I prioritize them for you?',
-      'calls': 'You have 2 missed calls. Would you like me to call them back?',
-      'call': 'You have 2 missed calls. Would you like me to call them back?',
-      'messages': 'You have 8 unread messages. Shall I summarize them?',
-      'message': 'You have 8 unread messages. Shall I summarize them?',
-      'help': 'I can help you with meetings, tasks, calls, messages, and scheduling. I also remember our conversation, so you can refer to things we discussed earlier.',
-      'default': 'I\'m here to help! You can ask me about meetings, tasks, calls, or messages. I remember our conversation, so feel free to reference things we talked about.'
-    };
-
-    for (const [key, response] of Object.entries(responses)) {
-      if (lowercaseInput.includes(key)) {
-        return response;
+    // Task-related queries with real data
+    if (lowercaseInput.includes('task')) {
+      if (lowercaseInput.includes('today')) {
+        if (todaysTasks.length > 0) {
+          const taskList = todaysTasks.map((task: any) => task.title).join(', ');
+          return `You have ${todaysTasks.length} task${todaysTasks.length !== 1 ? 's' : ''} due today: ${taskList}. Would you like me to prioritize them?`;
+        } else if (pendingTasks.length > 0) {
+          return `You don't have any tasks specifically due today, but you have ${pendingTasks.length} pending task${pendingTasks.length !== 1 ? 's' : ''} overall. Would you like to see them?`;
+        }
+        return 'You don\'t have any tasks due today. Great job staying on top of things!';
       }
+      
+      if (pendingTasks.length > 0) {
+        const highPriorityCount = pendingTasks.filter((t: any) => t.priority === 'high').length;
+        return `You have ${pendingTasks.length} pending task${pendingTasks.length !== 1 ? 's' : ''}${highPriorityCount > 0 ? ` (${highPriorityCount} high priority)` : ''}. Shall I list them or prioritize them for you?`;
+      }
+      return 'You don\'t have any pending tasks. You\'re all caught up!';
+    }
+
+    // Meeting-related queries with real data
+    if (lowercaseInput.includes('meeting')) {
+      if (todaysMeetings.length > 0) {
+        const meetingList = todaysMeetings.map((meeting: any) => 
+          `${meeting.title} at ${format(new Date(meeting.start_time), 'h:mm a')}`
+        ).join(', ');
+        return `You have ${todaysMeetings.length} meeting${todaysMeetings.length !== 1 ? 's' : ''} today: ${meetingList}. Would you like more details?`;
+      }
+      return 'You don\'t have any meetings scheduled for today.';
+    }
+
+    // Message-related queries with real data
+    if (lowercaseInput.includes('message')) {
+      if (unreadMessages.length > 0) {
+        const highPriorityMessages = unreadMessages.filter((msg: any) => msg.priority === 'high').length;
+        return `You have ${unreadMessages.length} unread message${unreadMessages.length !== 1 ? 's' : ''}${highPriorityMessages > 0 ? ` (${highPriorityMessages} high priority)` : ''}. Shall I summarize them?`;
+      }
+      return 'You don\'t have any unread messages. Your inbox is clean!';
+    }
+
+    // Call-related queries with real data
+    if (lowercaseInput.includes('call')) {
+      if (missedCalls.length > 0) {
+        return `You have ${missedCalls.length} missed call${missedCalls.length !== 1 ? 's' : ''}. Would you like me to help you return them?`;
+      }
+      return 'You don\'t have any missed calls.';
+    }
+
+    // Help and default responses
+    if (lowercaseInput.includes('help')) {
+      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). I also remember our conversation, so you can refer to things we discussed earlier.`;
     }
     
-    // Default response with context
+    // Default response with real data context
     if (history.length > 0) {
-      return `I heard you say: "${userInput}". ${responses.default} We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
+      return `I heard you say: "${userInput}". I can help you with your tasks, meetings, messages, and calls. We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
     }
     
-    return `I heard you say: "${userInput}". ${responses.default}`;
+    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. What would you like to know?`;
   };
 
   const handleVoiceCommand = async () => {
@@ -310,8 +372,8 @@ const VoiceAssistant = () => {
             style={{ color: 'hsl(var(--app-text-secondary))' }}
           >
             {isListening 
-              ? 'I\'m actively listening. I remember our conversation and understand context.'
-              : 'Your AI assistant remembers our conversation and can understand follow-up commands'
+              ? 'I\'m actively listening and can access your real dashboard data.'
+              : 'Your AI assistant with real-time access to your tasks, meetings, messages, and calls'
             }
           </p>
 
@@ -530,7 +592,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Show my meetings today" → then → "Schedule that for tomorrow"
+              "What are my tasks for today?" (I'll check your real tasks)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -540,7 +602,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "What tasks do I have?" → then → "Prioritize them"
+              "Show my meetings today" (I'll check your actual calendar)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -550,7 +612,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Any missed calls?" → then → "Call them back"
+              "Any unread messages?" (I'll check your message count)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -560,7 +622,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Check my messages" → then → "Read them to me"
+              "Help me prioritize my tasks" (Based on your real task data)
             </p>
           </div>
         </CardContent>
