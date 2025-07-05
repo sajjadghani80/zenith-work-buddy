@@ -204,12 +204,46 @@ const VoiceAssistant = () => {
       return `Based on our previous conversation about "${lastEntry?.userInput || 'your request'}", I can help you with that. What specifically would you like me to do?`;
     }
     
-    // Task-related queries with real data
+    // Task-related queries with real data - differentiate between count and detail requests
     if (lowercaseInput.includes('task')) {
+      // Count requests
+      if (lowercaseInput.includes('how many') || lowercaseInput.includes('number') || lowercaseInput.includes('count')) {
+        if (lowercaseInput.includes('today')) {
+          return `You have ${todaysTasks.length} task${todaysTasks.length !== 1 ? 's' : ''} due today.`;
+        }
+        return `You have ${pendingTasks.length} pending task${pendingTasks.length !== 1 ? 's' : ''} total.`;
+      }
+      
+      // Detail requests
+      if (lowercaseInput.includes('show') || lowercaseInput.includes('list') || lowercaseInput.includes('open')) {
+        if (lowercaseInput.includes('today')) {
+          if (todaysTasks.length > 0) {
+            const taskDetails = todaysTasks.map((task: any, index: number) => 
+              `${index + 1}. ${task.title}${task.description ? ` - ${task.description}` : ''} (Priority: ${task.priority})`
+            ).join(', ');
+            return `Here are your ${todaysTasks.length} task${todaysTasks.length !== 1 ? 's' : ''} due today: ${taskDetails}`;
+          } else if (pendingTasks.length > 0) {
+            const taskDetails = pendingTasks.slice(0, 3).map((task: any, index: number) => 
+              `${index + 1}. ${task.title}${task.description ? ` - ${task.description}` : ''} (Priority: ${task.priority})`
+            ).join(', ');
+            return `You don't have tasks due today, but here are your first 3 pending tasks: ${taskDetails}${pendingTasks.length > 3 ? ` and ${pendingTasks.length - 3} more.` : ''}`;
+          }
+          return 'You don\'t have any tasks due today. Great job staying on top of things!';
+        }
+        
+        if (pendingTasks.length > 0) {
+          const taskDetails = pendingTasks.slice(0, 5).map((task: any, index: number) => 
+            `${index + 1}. ${task.title}${task.description ? ` - ${task.description}` : ''} (Priority: ${task.priority}${task.due_date ? `, Due: ${format(new Date(task.due_date), 'MMM d')}` : ''})`
+          ).join(', ');
+          return `Here are your pending tasks: ${taskDetails}${pendingTasks.length > 5 ? ` and ${pendingTasks.length - 5} more.` : ''}`;
+        }
+        return 'You don\'t have any pending tasks. You\'re all caught up!';
+      }
+      
+      // General task query
       if (lowercaseInput.includes('today')) {
         if (todaysTasks.length > 0) {
-          const taskList = todaysTasks.map((task: any) => task.title).join(', ');
-          return `You have ${todaysTasks.length} task${todaysTasks.length !== 1 ? 's' : ''} due today: ${taskList}. Would you like me to prioritize them?`;
+          return `You have ${todaysTasks.length} task${todaysTasks.length !== 1 ? 's' : ''} due today. Would you like me to list them with details?`;
         } else if (pendingTasks.length > 0) {
           return `You don't have any tasks specifically due today, but you have ${pendingTasks.length} pending task${pendingTasks.length !== 1 ? 's' : ''} overall. Would you like to see them?`;
         }
@@ -218,42 +252,90 @@ const VoiceAssistant = () => {
       
       if (pendingTasks.length > 0) {
         const highPriorityCount = pendingTasks.filter((t: any) => t.priority === 'high').length;
-        return `You have ${pendingTasks.length} pending task${pendingTasks.length !== 1 ? 's' : ''}${highPriorityCount > 0 ? ` (${highPriorityCount} high priority)` : ''}. Shall I list them or prioritize them for you?`;
+        return `You have ${pendingTasks.length} pending task${pendingTasks.length !== 1 ? 's' : ''}${highPriorityCount > 0 ? ` (${highPriorityCount} high priority)` : ''}. Say "show my tasks" to see details or "how many tasks" for just the count.`;
       }
       return 'You don\'t have any pending tasks. You\'re all caught up!';
     }
 
     // Meeting-related queries with real data
     if (lowercaseInput.includes('meeting')) {
+      // Count requests
+      if (lowercaseInput.includes('how many') || lowercaseInput.includes('number') || lowercaseInput.includes('count')) {
+        return `You have ${todaysMeetings.length} meeting${todaysMeetings.length !== 1 ? 's' : ''} scheduled for today.`;
+      }
+      
+      // Detail requests
+      if (lowercaseInput.includes('show') || lowercaseInput.includes('list') || lowercaseInput.includes('open')) {
+        if (todaysMeetings.length > 0) {
+          const meetingDetails = todaysMeetings.map((meeting: any, index: number) => 
+            `${index + 1}. ${meeting.title} at ${format(new Date(meeting.start_time), 'h:mm a')}${meeting.location ? ` (${meeting.location})` : ''}${meeting.description ? ` - ${meeting.description}` : ''}`
+          ).join(', ');
+          return `Here are your meetings today: ${meetingDetails}`;
+        }
+        return 'You don\'t have any meetings scheduled for today.';
+      }
+      
+      // General meeting query
       if (todaysMeetings.length > 0) {
-        const meetingList = todaysMeetings.map((meeting: any) => 
-          `${meeting.title} at ${format(new Date(meeting.start_time), 'h:mm a')}`
-        ).join(', ');
-        return `You have ${todaysMeetings.length} meeting${todaysMeetings.length !== 1 ? 's' : ''} today: ${meetingList}. Would you like more details?`;
+        return `You have ${todaysMeetings.length} meeting${todaysMeetings.length !== 1 ? 's' : ''} today. Say "show my meetings" for details or "how many meetings" for just the count.`;
       }
       return 'You don\'t have any meetings scheduled for today.';
     }
 
     // Message-related queries with real data
     if (lowercaseInput.includes('message')) {
+      // Count requests
+      if (lowercaseInput.includes('how many') || lowercaseInput.includes('number') || lowercaseInput.includes('count')) {
+        return `You have ${unreadMessages.length} unread message${unreadMessages.length !== 1 ? 's' : ''}.`;
+      }
+      
+      // Detail requests
+      if (lowercaseInput.includes('show') || lowercaseInput.includes('list') || lowercaseInput.includes('open')) {
+        if (unreadMessages.length > 0) {
+          const messageDetails = unreadMessages.slice(0, 3).map((msg: any, index: number) => 
+            `${index + 1}. From ${msg.sender_name}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''} (${msg.priority} priority)`
+          ).join(', ');
+          return `Here are your recent unread messages: ${messageDetails}${unreadMessages.length > 3 ? ` and ${unreadMessages.length - 3} more.` : ''}`;
+        }
+        return 'You don\'t have any unread messages. Your inbox is clean!';
+      }
+      
+      // General message query
       if (unreadMessages.length > 0) {
         const highPriorityMessages = unreadMessages.filter((msg: any) => msg.priority === 'high').length;
-        return `You have ${unreadMessages.length} unread message${unreadMessages.length !== 1 ? 's' : ''}${highPriorityMessages > 0 ? ` (${highPriorityMessages} high priority)` : ''}. Shall I summarize them?`;
+        return `You have ${unreadMessages.length} unread message${unreadMessages.length !== 1 ? 's' : ''}${highPriorityMessages > 0 ? ` (${highPriorityMessages} high priority)` : ''}. Say "show my messages" for details.`;
       }
       return 'You don\'t have any unread messages. Your inbox is clean!';
     }
 
     // Call-related queries with real data
     if (lowercaseInput.includes('call')) {
+      // Count requests
+      if (lowercaseInput.includes('how many') || lowercaseInput.includes('number') || lowercaseInput.includes('count')) {
+        return `You have ${missedCalls.length} missed call${missedCalls.length !== 1 ? 's' : ''}.`;
+      }
+      
+      // Detail requests
+      if (lowercaseInput.includes('show') || lowercaseInput.includes('list') || lowercaseInput.includes('open')) {
+        if (missedCalls.length > 0) {
+          const callDetails = missedCalls.slice(0, 3).map((call: any, index: number) => 
+            `${index + 1}. ${call.contact_name}${call.phone_number ? ` (${call.phone_number})` : ''} at ${format(new Date(call.call_time), 'h:mm a')}`
+          ).join(', ');
+          return `Here are your recent missed calls: ${callDetails}${missedCalls.length > 3 ? ` and ${missedCalls.length - 3} more.` : ''}`;
+        }
+        return 'You don\'t have any missed calls.';
+      }
+      
+      // General call query
       if (missedCalls.length > 0) {
-        return `You have ${missedCalls.length} missed call${missedCalls.length !== 1 ? 's' : ''}. Would you like me to help you return them?`;
+        return `You have ${missedCalls.length} missed call${missedCalls.length !== 1 ? 's' : ''}. Say "show my calls" for details.`;
       }
       return 'You don\'t have any missed calls.';
     }
 
     // Help and default responses
     if (lowercaseInput.includes('help')) {
-      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). I also remember our conversation, so you can refer to things we discussed earlier.`;
+      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). Use "show" or "list" for details, "how many" for counts. I also remember our conversation context.`;
     }
     
     // Default response with real data context
@@ -261,7 +343,7 @@ const VoiceAssistant = () => {
       return `I heard you say: "${userInput}". I can help you with your tasks, meetings, messages, and calls. We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
     }
     
-    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. What would you like to know?`;
+    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. Use "show" for details or "how many" for counts.`;
   };
 
   const handleVoiceCommand = async () => {
