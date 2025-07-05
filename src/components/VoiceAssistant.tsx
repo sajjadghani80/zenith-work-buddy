@@ -1,13 +1,11 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Volume2, MessageCircle } from 'lucide-react';
+import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTasks } from '@/hooks/useTasks';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useMessages } from '@/hooks/useMessages';
 import { useCalls } from '@/hooks/useCalls';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { format, isToday } from 'date-fns';
 
 interface ConversationEntry {
@@ -18,31 +16,29 @@ interface ConversationEntry {
 
 const VoiceAssistant = () => {
   const [isListening, setIsListening] = useState(false);
-  const [isConversationMode, setIsConversationMode] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState('');
   const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
   const recognitionRef = useRef<any>(null);
-  const conversationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isProcessingRef = useRef(false);
 
   // Get real data from hooks
   const { tasks } = useTasks();
   const { meetings } = useMeetings();
   const { messages } = useMessages();
   const { calls } = useCalls();
-  const { speak, isSpeaking, error: speechError } = useTextToSpeech();
 
   useEffect(() => {
+    // Check if Web Speech API is supported
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       setIsSupported(true);
       
+      // Initialize speech recognition
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
+      recognition.continuous = true; // Keep listening
+      recognition.interimResults = true; // Show interim results
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1;
       
@@ -50,11 +46,10 @@ const VoiceAssistant = () => {
         console.log('Speech recognition started');
         setIsListening(true);
         setError('');
+        setResponse('');
       };
       
-      recognition.onresult = async (event: any) => {
-        if (isProcessingRef.current) return;
-        
+      recognition.onresult = (event: any) => {
         let finalTranscript = '';
         let interimTranscript = '';
         
@@ -67,91 +62,68 @@ const VoiceAssistant = () => {
           }
         }
         
-        if (finalTranscript.trim()) {
-          isProcessingRef.current = true;
-          console.log('Final transcript:', finalTranscript);
+        console.log('Final transcript:', finalTranscript);
+        console.log('Interim transcript:', interimTranscript);
+        
+        if (finalTranscript) {
           setTranscript(finalTranscript);
           
+          // Generate AI response with real data
           const aiResponse = generateSmartResponse(finalTranscript, conversationHistory, {
             tasks,
             meetings,
             messages,
             calls
           });
-          
           setResponse(aiResponse);
           
+          // Add to conversation history
           const newEntry: ConversationEntry = {
             timestamp: new Date(),
             userInput: finalTranscript,
             aiResponse: aiResponse
           };
-          setConversationHistory(prev => [...prev.slice(-4), newEntry]);
+          setConversationHistory(prev => [...prev.slice(-4), newEntry]); // Keep last 5 exchanges
           
-          // Speak the response and then continue listening if in conversation mode
-          try {
-            await speak(aiResponse);
-            
-            // After speaking, restart listening if still in conversation mode
-            if (isConversationMode) {
-              setTimeout(() => {
-                if (isConversationMode && !isSpeaking) {
-                  console.log('Restarting listening after speech...');
-                  startListening();
-                }
-                isProcessingRef.current = false;
-              }, 1000);
-            } else {
-              isProcessingRef.current = false;
-            }
-          } catch (error) {
-            console.error('Error speaking response:', error);
-            isProcessingRef.current = false;
-          }
-          
-        } else if (interimTranscript.trim()) {
+          // Stop listening after getting a result
+          recognition.stop();
+        } else if (interimTranscript) {
           setTranscript(interimTranscript + ' (listening...)');
         }
       };
       
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        isProcessingRef.current = false;
         
         if (event.error === 'not-allowed') {
           setError('Microphone access denied. Please allow microphone access and try again.');
-          setIsConversationMode(false);
         } else if (event.error === 'no-speech') {
-          console.log('No speech detected, restarting...');
-          if (isConversationMode && !isSpeaking && !isProcessingRef.current) {
-            setTimeout(() => {
-              startListening();
-            }, 1500);
-          }
+          setError('No speech detected. Please speak louder and try again.');
+          // Automatically restart listening for no-speech errors
+          setTimeout(() => {
+            if (recognitionRef.current && isListening) {
+              try {
+                recognitionRef.current.start();
+                setError('');
+              } catch (e) {
+                console.log('Recognition restart failed:', e);
+              }
+            }
+          }, 1000);
         } else if (event.error === 'audio-capture') {
           setError('No microphone found. Please check your microphone connection.');
-          setIsConversationMode(false);
         } else if (event.error === 'network') {
           setError('Network error. Please check your internet connection.');
         } else {
           setError(`Speech recognition error: ${event.error}. Please try again.`);
         }
+        
+        setIsListening(false);
       };
       
       recognition.onend = () => {
         console.log('Speech recognition ended');
         setIsListening(false);
-        
-        // Only restart if we're in conversation mode and not currently processing
-        if (isConversationMode && !isProcessingRef.current && !isSpeaking) {
-          setTimeout(() => {
-            if (isConversationMode) {
-              console.log('Auto-restarting listening...');
-              startListening();
-            }
-          }, 500);
-        }
       };
       
       recognitionRef.current = recognition;
@@ -161,11 +133,8 @@ const VoiceAssistant = () => {
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
-      if (conversationTimeoutRef.current) {
-        clearTimeout(conversationTimeoutRef.current);
-      }
     };
-  }, [conversationHistory, tasks, meetings, messages, calls, isConversationMode, isSpeaking]);
+  }, [conversationHistory, tasks, meetings, messages, calls]);
 
   const generateSmartResponse = (userInput: string, history: ConversationEntry[], realData: any) => {
     const lowercaseInput = userInput.toLowerCase();
@@ -377,56 +346,32 @@ const VoiceAssistant = () => {
     return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. Use "show" for details or "how many" for counts.`;
   };
 
-  const startListening = () => {
-    if (!recognitionRef.current || isListening || isProcessingRef.current) {
-      console.log('Cannot start listening:', { isListening, isProcessing: isProcessingRef.current });
-      return;
-    }
-
-    try {
-      setTranscript('');
-      setError('');
-      console.log('Starting speech recognition...');
-      recognitionRef.current.start();
-    } catch (error) {
-      console.error('Error starting recognition:', error);
-      setError('Failed to start listening. Please try again.');
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      console.log('Stopping speech recognition...');
-      recognitionRef.current.stop();
-    }
-  };
-
   const handleVoiceCommand = async () => {
     if (!isSupported) {
       setError('Speech recognition is not supported in this browser. Please try Chrome, Edge, or Safari.');
       return;
     }
 
-    if (isConversationMode) {
-      // Stop conversation mode
-      console.log('Stopping conversation mode...');
-      setIsConversationMode(false);
-      stopListening();
-      isProcessingRef.current = false;
-      if (conversationTimeoutRef.current) {
-        clearTimeout(conversationTimeoutRef.current);
+    if (isListening) {
+      // Stop listening
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
     } else {
-      // Start conversation mode
+      // Start listening
       try {
+        // Request microphone permission
         await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('Starting conversation mode...');
-        setIsConversationMode(true);
+        
+        // Clear previous results
+        setTranscript('');
+        setResponse('');
         setError('');
-        isProcessingRef.current = false;
-        setTimeout(() => {
-          startListening();
-        }, 500);
+        
+        // Start recognition
+        if (recognitionRef.current) {
+          recognitionRef.current.start();
+        }
       } catch (error) {
         console.error('Microphone access error:', error);
         setError('Microphone access is required for voice commands. Please allow access and try again.');
@@ -482,18 +427,18 @@ const VoiceAssistant = () => {
             <Button
               onClick={handleVoiceCommand}
               className={`w-24 h-24 rounded-full mx-auto shadow-lg transition-all duration-300 ${
-                isConversationMode 
+                isListening 
                   ? 'bg-red-500 hover:bg-red-600 animate-pulse shadow-red-200' 
                   : ''
               }`}
               style={{
-                backgroundColor: isConversationMode ? undefined : 'hsl(var(--app-primary))',
-                boxShadow: isConversationMode 
+                backgroundColor: isListening ? undefined : 'hsl(var(--app-primary))',
+                boxShadow: isListening 
                   ? '0 0 0 0 rgba(239, 68, 68, 0.7)' 
                   : '0 10px 30px rgba(79, 70, 229, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
               }}
             >
-              {isConversationMode ? <MicOff className="w-8 h-8" /> : <MessageCircle className="w-8 h-8" />}
+              {isListening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
             </Button>
           </div>
           
@@ -501,34 +446,18 @@ const VoiceAssistant = () => {
             className="text-2xl font-bold mb-3"
             style={{ color: 'hsl(var(--app-text-primary))' }}
           >
-            {isConversationMode 
-              ? (isListening ? 'Listening...' : isSpeaking ? 'Speaking...' : 'Conversation Active')
-              : 'Start Conversation'
-            }
+            {isListening ? 'Listening... Speak now!' : 'Tap to speak'}
           </h3>
           
           <p 
             className="text-base mb-4"
             style={{ color: 'hsl(var(--app-text-secondary))' }}
           >
-            {isConversationMode 
-              ? 'Having a real-time conversation with your AI assistant. Press the button to stop.'
-              : 'Tap to start a continuous voice conversation with your AI assistant'
+            {isListening 
+              ? 'I\'m actively listening and can access your real dashboard data.'
+              : 'Your AI assistant with real-time access to your tasks, meetings, messages, and calls'
             }
           </p>
-
-          {/* Speaking indicator */}
-          {isSpeaking && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <Volume2 className="w-5 h-5 animate-pulse" style={{ color: 'hsl(var(--app-accent))' }} />
-              <p 
-                className="text-sm animate-pulse"
-                style={{ color: 'hsl(var(--app-accent))' }}
-              >
-                AI is speaking...
-              </p>
-            </div>
-          )}
 
           {/* Memory Status */}
           {conversationHistory.length > 0 && (
@@ -560,7 +489,7 @@ const VoiceAssistant = () => {
       </Card>
 
       {/* Error Display */}
-      {(error || speechError) && (
+      {error && (
         <Card 
           className="shadow-lg border-0" 
           style={{ 
@@ -584,7 +513,7 @@ const VoiceAssistant = () => {
                 >
                   Error:
                 </h4>
-                <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{error || speechError}</p>
+                <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{error}</p>
               </div>
             </div>
           </CardContent>
