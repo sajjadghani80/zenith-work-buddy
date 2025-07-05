@@ -26,6 +26,7 @@ const VoiceAssistant = () => {
   const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
   const recognitionRef = useRef<any>(null);
   const conversationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isProcessingRef = useRef(false);
 
   // Get real data from hooks
   const { tasks } = useTasks();
@@ -52,6 +53,8 @@ const VoiceAssistant = () => {
       };
       
       recognition.onresult = async (event: any) => {
+        if (isProcessingRef.current) return;
+        
         let finalTranscript = '';
         let interimTranscript = '';
         
@@ -64,7 +67,8 @@ const VoiceAssistant = () => {
           }
         }
         
-        if (finalTranscript) {
+        if (finalTranscript.trim()) {
+          isProcessingRef.current = true;
           console.log('Final transcript:', finalTranscript);
           setTranscript(finalTranscript);
           
@@ -84,10 +88,28 @@ const VoiceAssistant = () => {
           };
           setConversationHistory(prev => [...prev.slice(-4), newEntry]);
           
-          // Speak the response
-          await handleVoiceResponse(aiResponse);
+          // Speak the response and then continue listening if in conversation mode
+          try {
+            await speak(aiResponse);
+            
+            // After speaking, restart listening if still in conversation mode
+            if (isConversationMode) {
+              setTimeout(() => {
+                if (isConversationMode && !isSpeaking) {
+                  console.log('Restarting listening after speech...');
+                  startListening();
+                }
+                isProcessingRef.current = false;
+              }, 1000);
+            } else {
+              isProcessingRef.current = false;
+            }
+          } catch (error) {
+            console.error('Error speaking response:', error);
+            isProcessingRef.current = false;
+          }
           
-        } else if (interimTranscript) {
+        } else if (interimTranscript.trim()) {
           setTranscript(interimTranscript + ' (listening...)');
         }
       };
@@ -95,20 +117,17 @@ const VoiceAssistant = () => {
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
+        isProcessingRef.current = false;
         
         if (event.error === 'not-allowed') {
           setError('Microphone access denied. Please allow microphone access and try again.');
           setIsConversationMode(false);
         } else if (event.error === 'no-speech') {
-          if (isConversationMode) {
-            // In conversation mode, restart listening after a brief delay
+          console.log('No speech detected, restarting...');
+          if (isConversationMode && !isSpeaking && !isProcessingRef.current) {
             setTimeout(() => {
-              if (isConversationMode && !isSpeaking) {
-                startListening();
-              }
-            }, 1000);
-          } else {
-            setError('No speech detected. Please speak louder and try again.');
+              startListening();
+            }, 1500);
           }
         } else if (event.error === 'audio-capture') {
           setError('No microphone found. Please check your microphone connection.');
@@ -123,6 +142,16 @@ const VoiceAssistant = () => {
       recognition.onend = () => {
         console.log('Speech recognition ended');
         setIsListening(false);
+        
+        // Only restart if we're in conversation mode and not currently processing
+        if (isConversationMode && !isProcessingRef.current && !isSpeaking) {
+          setTimeout(() => {
+            if (isConversationMode) {
+              console.log('Auto-restarting listening...');
+              startListening();
+            }
+          }, 500);
+        }
       };
       
       recognitionRef.current = recognition;
@@ -348,30 +377,16 @@ const VoiceAssistant = () => {
     return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. Use "show" for details or "how many" for counts.`;
   };
 
-  const handleVoiceResponse = async (responseText: string) => {
-    try {
-      console.log('Speaking response:', responseText);
-      await speak(responseText);
-      
-      // In conversation mode, start listening again after speaking
-      if (isConversationMode && !isSpeaking) {
-        setTimeout(() => {
-          if (isConversationMode) {
-            startListening();
-          }
-        }, 500); // Small delay to ensure speech has finished
-      }
-    } catch (error) {
-      console.error('Error speaking response:', error);
-    }
-  };
-
   const startListening = () => {
-    if (!recognitionRef.current || isListening) return;
+    if (!recognitionRef.current || isListening || isProcessingRef.current) {
+      console.log('Cannot start listening:', { isListening, isProcessing: isProcessingRef.current });
+      return;
+    }
 
     try {
       setTranscript('');
       setError('');
+      console.log('Starting speech recognition...');
       recognitionRef.current.start();
     } catch (error) {
       console.error('Error starting recognition:', error);
@@ -381,6 +396,7 @@ const VoiceAssistant = () => {
 
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
+      console.log('Stopping speech recognition...');
       recognitionRef.current.stop();
     }
   };
@@ -393,8 +409,10 @@ const VoiceAssistant = () => {
 
     if (isConversationMode) {
       // Stop conversation mode
+      console.log('Stopping conversation mode...');
       setIsConversationMode(false);
       stopListening();
+      isProcessingRef.current = false;
       if (conversationTimeoutRef.current) {
         clearTimeout(conversationTimeoutRef.current);
       }
@@ -402,9 +420,13 @@ const VoiceAssistant = () => {
       // Start conversation mode
       try {
         await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Starting conversation mode...');
         setIsConversationMode(true);
         setError('');
-        startListening();
+        isProcessingRef.current = false;
+        setTimeout(() => {
+          startListening();
+        }, 500);
       } catch (error) {
         console.error('Microphone access error:', error);
         setError('Microphone access is required for voice commands. Please allow access and try again.');
