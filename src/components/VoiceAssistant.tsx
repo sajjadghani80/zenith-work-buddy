@@ -1,12 +1,14 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Volume2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTasks } from '@/hooks/useTasks';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useMessages } from '@/hooks/useMessages';
 import { useCalls } from '@/hooks/useCalls';
-import { format, isToday, addDays } from 'date-fns';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { format, isToday } from 'date-fns';
 
 interface ConversationEntry {
   timestamp: Date;
@@ -16,29 +18,31 @@ interface ConversationEntry {
 
 const VoiceAssistant = () => {
   const [isListening, setIsListening] = useState(false);
+  const [isConversationMode, setIsConversationMode] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState('');
   const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
   const recognitionRef = useRef<any>(null);
+  const conversationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isProcessingRef = useRef(false);
 
   // Get real data from hooks
-  const { tasks, createTask, updateTask, deleteTask } = useTasks();
-  const { meetings, createMeeting, updateMeeting } = useMeetings();
+  const { tasks } = useTasks();
+  const { meetings } = useMeetings();
   const { messages } = useMessages();
   const { calls } = useCalls();
+  const { speak, isSpeaking, error: speechError } = useTextToSpeech();
 
   useEffect(() => {
-    // Check if Web Speech API is supported
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       setIsSupported(true);
       
-      // Initialize speech recognition
       const recognition = new SpeechRecognition();
-      recognition.continuous = true; // Keep listening
-      recognition.interimResults = true; // Show interim results
+      recognition.continuous = false;
+      recognition.interimResults = true;
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1;
       
@@ -46,10 +50,11 @@ const VoiceAssistant = () => {
         console.log('Speech recognition started');
         setIsListening(true);
         setError('');
-        setResponse('');
       };
       
-      recognition.onresult = (event: any) => {
+      recognition.onresult = async (event: any) => {
+        if (isProcessingRef.current) return;
+        
         let finalTranscript = '';
         let interimTranscript = '';
         
@@ -62,73 +67,91 @@ const VoiceAssistant = () => {
           }
         }
         
-        console.log('Final transcript:', finalTranscript);
-        console.log('Interim transcript:', interimTranscript);
-        
-        if (finalTranscript) {
+        if (finalTranscript.trim()) {
+          isProcessingRef.current = true;
+          console.log('Final transcript:', finalTranscript);
           setTranscript(finalTranscript);
           
-          // Generate AI response with real data and actions
           const aiResponse = generateSmartResponse(finalTranscript, conversationHistory, {
             tasks,
             meetings,
             messages,
-            calls,
-            createTask,
-            updateTask,
-            deleteTask,
-            createMeeting,
-            updateMeeting
+            calls
           });
+          
           setResponse(aiResponse);
           
-          // Add to conversation history
           const newEntry: ConversationEntry = {
             timestamp: new Date(),
             userInput: finalTranscript,
             aiResponse: aiResponse
           };
-          setConversationHistory(prev => [...prev.slice(-4), newEntry]); // Keep last 5 exchanges
+          setConversationHistory(prev => [...prev.slice(-4), newEntry]);
           
-          // Stop listening after getting a result
-          recognition.stop();
-        } else if (interimTranscript) {
+          // Speak the response and then continue listening if in conversation mode
+          try {
+            await speak(aiResponse);
+            
+            // After speaking, restart listening if still in conversation mode
+            if (isConversationMode) {
+              setTimeout(() => {
+                if (isConversationMode && !isSpeaking) {
+                  console.log('Restarting listening after speech...');
+                  startListening();
+                }
+                isProcessingRef.current = false;
+              }, 1000);
+            } else {
+              isProcessingRef.current = false;
+            }
+          } catch (error) {
+            console.error('Error speaking response:', error);
+            isProcessingRef.current = false;
+          }
+          
+        } else if (interimTranscript.trim()) {
           setTranscript(interimTranscript + ' (listening...)');
         }
       };
       
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        isProcessingRef.current = false;
         
         if (event.error === 'not-allowed') {
           setError('Microphone access denied. Please allow microphone access and try again.');
+          setIsConversationMode(false);
         } else if (event.error === 'no-speech') {
-          setError('No speech detected. Please speak louder and try again.');
-          // Automatically restart listening for no-speech errors
-          setTimeout(() => {
-            if (recognitionRef.current && isListening) {
-              try {
-                recognitionRef.current.start();
-                setError('');
-              } catch (e) {
-                console.log('Recognition restart failed:', e);
-              }
-            }
-          }, 1000);
+          console.log('No speech detected, restarting...');
+          if (isConversationMode && !isSpeaking && !isProcessingRef.current) {
+            setTimeout(() => {
+              startListening();
+            }, 1500);
+          }
         } else if (event.error === 'audio-capture') {
           setError('No microphone found. Please check your microphone connection.');
+          setIsConversationMode(false);
         } else if (event.error === 'network') {
           setError('Network error. Please check your internet connection.');
         } else {
           setError(`Speech recognition error: ${event.error}. Please try again.`);
         }
-        
-        setIsListening(false);
       };
       
       recognition.onend = () => {
         console.log('Speech recognition ended');
         setIsListening(false);
+        
+        // Only restart if we're in conversation mode and not currently processing
+        if (isConversationMode && !isProcessingRef.current && !isSpeaking) {
+          setTimeout(() => {
+            if (isConversationMode) {
+              console.log('Auto-restarting listening...');
+              startListening();
+            }
+          }, 500);
+        }
       };
       
       recognitionRef.current = recognition;
@@ -138,8 +161,11 @@ const VoiceAssistant = () => {
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
+      if (conversationTimeoutRef.current) {
+        clearTimeout(conversationTimeoutRef.current);
+      }
     };
-  }, [conversationHistory, tasks, meetings, messages, calls, createTask, updateTask, deleteTask, createMeeting, updateMeeting]);
+  }, [conversationHistory, tasks, meetings, messages, calls, isConversationMode, isSpeaking]);
 
   const generateSmartResponse = (userInput: string, history: ConversationEntry[], realData: any) => {
     const lowercaseInput = userInput.toLowerCase();
@@ -162,190 +188,6 @@ const VoiceAssistant = () => {
     const unreadMessages = realData.messages?.filter((msg: any) => !msg.is_read) || [];
     const missedCalls = realData.calls?.filter((call: any) => call.call_type === 'missed') || [];
     
-    // Task creation commands
-    if (lowercaseInput.includes('create task') || lowercaseInput.includes('add task') || lowercaseInput.includes('new task')) {
-      const taskMatch = userInput.match(/(?:create|add|new)\s+task\s+(.+?)(?:\s+(?:due|by)\s+(.+?))?(?:\s+(?:priority|with)\s+(high|medium|low))?$/i);
-      
-      if (taskMatch) {
-        const title = taskMatch[1]?.trim();
-        const dueDateStr = taskMatch[2]?.trim();
-        const priority = taskMatch[3]?.toLowerCase() || 'medium';
-        
-        if (title) {
-          let dueDate = null;
-          
-          // Parse due date
-          if (dueDateStr) {
-            if (dueDateStr.toLowerCase().includes('today')) {
-              dueDate = new Date().toISOString();
-            } else if (dueDateStr.toLowerCase().includes('tomorrow')) {
-              dueDate = addDays(new Date(), 1).toISOString();
-            } else if (dueDateStr.toLowerCase().includes('next week')) {
-              dueDate = addDays(new Date(), 7).toISOString();
-            }
-          }
-          
-          // Create the task
-          realData.createTask.mutate({
-            title,
-            description: null,
-            completed: false,
-            priority: priority as 'low' | 'medium' | 'high',
-            due_date: dueDate
-          });
-          
-          return `I've created a new ${priority} priority task: "${title}"${dueDate ? ` due ${dueDateStr}` : ''}. The task has been added to your list.`;
-        }
-      }
-      
-      return 'I can help you create a task. Please say something like "Create task buy groceries due tomorrow with high priority" or "Add task call dentist".';
-    }
-
-    // Task deletion commands
-    if (lowercaseInput.includes('delete task') || lowercaseInput.includes('remove task') || lowercaseInput.includes('complete task')) {
-      const isComplete = lowercaseInput.includes('complete task');
-      
-      // Try to extract task name
-      const taskMatch = userInput.match(/(?:delete|remove|complete)\s+task\s+(.+)$/i);
-      
-      if (taskMatch) {
-        const taskName = taskMatch[1]?.trim().toLowerCase();
-        
-        // Find matching task
-        const matchingTask = pendingTasks.find((task: any) => 
-          task.title.toLowerCase().includes(taskName) || taskName.includes(task.title.toLowerCase())
-        );
-        
-        if (matchingTask) {
-          if (isComplete) {
-            realData.updateTask.mutate({
-              id: matchingTask.id,
-              completed: true
-            });
-            return `Great! I've marked "${matchingTask.title}" as completed.`;
-          } else {
-            realData.deleteTask.mutate(matchingTask.id);
-            return `I've deleted the task "${matchingTask.title}" from your list.`;
-          }
-        } else {
-          if (pendingTasks.length > 0) {
-            const taskList = pendingTasks.slice(0, 3).map((task: any, index: number) => 
-              `${index + 1}. ${task.title}`
-            ).join(', ');
-            return `I couldn't find a task matching "${taskName}". Here are your current tasks: ${taskList}. Please be more specific.`;
-          }
-          return `I couldn't find a task matching "${taskName}". You don't have any pending tasks.`;
-        }
-      }
-      
-      if (pendingTasks.length > 0) {
-        const taskList = pendingTasks.slice(0, 3).map((task: any, index: number) => 
-          `${index + 1}. ${task.title}`
-        ).join(', ');
-        return `Which task would you like to ${isComplete ? 'complete' : 'delete'}? Here are your current tasks: ${taskList}`;
-      }
-      
-      return "You don't have any pending tasks to manage.";
-    }
-
-    // Meeting creation commands
-    if (lowercaseInput.includes('create meeting') || lowercaseInput.includes('add meeting') || lowercaseInput.includes('schedule meeting')) {
-      const meetingMatch = userInput.match(/(?:create|add|schedule)\s+meeting\s+(.+?)(?:\s+(?:at|on)\s+(.+?))?(?:\s+(?:for|duration)\s+(\d+)\s*(?:hour|hr|minute|min)s?)?$/i);
-      
-      if (meetingMatch) {
-        const title = meetingMatch[1]?.trim();
-        const timeStr = meetingMatch[2]?.trim();
-        const duration = meetingMatch[3] ? parseInt(meetingMatch[3]) : 60; // Default 60 minutes
-        
-        if (title) {
-          let startTime = new Date();
-          
-          // Parse meeting time
-          if (timeStr) {
-            if (timeStr.toLowerCase().includes('today')) {
-              // Default to next hour
-              startTime.setHours(startTime.getHours() + 1, 0, 0, 0);
-            } else if (timeStr.toLowerCase().includes('tomorrow')) {
-              startTime = addDays(new Date(), 1);
-              startTime.setHours(9, 0, 0, 0); // 9 AM tomorrow
-            } else {
-              // Try to parse time like "2pm", "14:00", etc.
-              const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-              if (timeMatch) {
-                let hours = parseInt(timeMatch[1]);
-                const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-                const ampm = timeMatch[3]?.toLowerCase();
-                
-                if (ampm === 'pm' && hours !== 12) hours += 12;
-                if (ampm === 'am' && hours === 12) hours = 0;
-                
-                startTime.setHours(hours, minutes, 0, 0);
-              }
-            }
-          } else {
-            // Default to next hour
-            startTime.setHours(startTime.getHours() + 1, 0, 0, 0);
-          }
-          
-          const endTime = new Date(startTime.getTime() + duration * 60000);
-          
-          // Create the meeting
-          realData.createMeeting.mutate({
-            title,
-            description: null,
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
-            location: null,
-            attendees: [],
-            status: 'scheduled'
-          });
-          
-          return `I've scheduled a meeting "${title}" for ${format(startTime, 'MMM d, h:mm a')} - ${format(endTime, 'h:mm a')}. The meeting has been added to your calendar.`;
-        }
-      }
-      
-      return 'I can help you schedule a meeting. Please say something like "Create meeting team standup at 2pm tomorrow" or "Schedule meeting client call for 60 minutes".';
-    }
-
-    // Meeting deletion/cancellation commands
-    if (lowercaseInput.includes('cancel meeting') || lowercaseInput.includes('delete meeting') || lowercaseInput.includes('remove meeting')) {
-      const meetingMatch = userInput.match(/(?:cancel|delete|remove)\s+meeting\s+(.+)$/i);
-      
-      if (meetingMatch) {
-        const meetingName = meetingMatch[1]?.trim().toLowerCase();
-        
-        // Find matching meeting
-        const matchingMeeting = realData.meetings?.find((meeting: any) => 
-          meeting.title.toLowerCase().includes(meetingName) || meetingName.includes(meeting.title.toLowerCase())
-        );
-        
-        if (matchingMeeting) {
-          realData.updateMeeting.mutate({
-            id: matchingMeeting.id,
-            status: 'cancelled'
-          });
-          return `I've cancelled the meeting "${matchingMeeting.title}" scheduled for ${format(new Date(matchingMeeting.start_time), 'MMM d, h:mm a')}.`;
-        } else {
-          if (realData.meetings?.length > 0) {
-            const meetingList = realData.meetings.slice(0, 3).map((meeting: any, index: number) => 
-              `${index + 1}. ${meeting.title} (${format(new Date(meeting.start_time), 'MMM d, h:mm a')})`
-            ).join(', ');
-            return `I couldn't find a meeting matching "${meetingName}". Here are your upcoming meetings: ${meetingList}. Please be more specific.`;
-          }
-          return `I couldn't find a meeting matching "${meetingName}". You don't have any scheduled meetings.`;
-        }
-      }
-      
-      if (realData.meetings?.length > 0) {
-        const meetingList = realData.meetings.slice(0, 3).map((meeting: any, index: number) => 
-          `${index + 1}. ${meeting.title} (${format(new Date(meeting.start_time), 'MMM d, h:mm a')})`
-        ).join(', ');
-        return `Which meeting would you like to cancel? Here are your scheduled meetings: ${meetingList}`;
-      }
-      
-      return "You don't have any scheduled meetings to cancel.";
-    }
-
     // Context-aware responses with real data
     if (lowercaseInput.includes('that') || lowercaseInput.includes('it') || lowercaseInput.includes('them')) {
       const lastEntry = history[history.length - 1];
@@ -524,15 +366,39 @@ const VoiceAssistant = () => {
 
     // Help and default responses
     if (lowercaseInput.includes('help')) {
-      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). I can also create/delete tasks and schedule/cancel meetings. Use "show," "list," or "create," "delete" commands. I remember our conversation context.`;
+      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). Use "show" or "list" for details, "how many" for counts. I also remember our conversation context.`;
     }
     
     // Default response with real data context
     if (history.length > 0) {
-      return `I heard you say: "${userInput}". I can help you manage your tasks, meetings, messages, and calls. We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
+      return `I heard you say: "${userInput}". I can help you with your tasks, meetings, messages, and calls. We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
     }
     
-    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. Try "create task," "schedule meeting," "show tasks," or "cancel meeting" commands.`;
+    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. Use "show" for details or "how many" for counts.`;
+  };
+
+  const startListening = () => {
+    if (!recognitionRef.current || isListening || isProcessingRef.current) {
+      console.log('Cannot start listening:', { isListening, isProcessing: isProcessingRef.current });
+      return;
+    }
+
+    try {
+      setTranscript('');
+      setError('');
+      console.log('Starting speech recognition...');
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('Error starting recognition:', error);
+      setError('Failed to start listening. Please try again.');
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      console.log('Stopping speech recognition...');
+      recognitionRef.current.stop();
+    }
   };
 
   const handleVoiceCommand = async () => {
@@ -541,26 +407,26 @@ const VoiceAssistant = () => {
       return;
     }
 
-    if (isListening) {
-      // Stop listening
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+    if (isConversationMode) {
+      // Stop conversation mode
+      console.log('Stopping conversation mode...');
+      setIsConversationMode(false);
+      stopListening();
+      isProcessingRef.current = false;
+      if (conversationTimeoutRef.current) {
+        clearTimeout(conversationTimeoutRef.current);
       }
     } else {
-      // Start listening
+      // Start conversation mode
       try {
-        // Request microphone permission
         await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        // Clear previous results
-        setTranscript('');
-        setResponse('');
+        console.log('Starting conversation mode...');
+        setIsConversationMode(true);
         setError('');
-        
-        // Start recognition
-        if (recognitionRef.current) {
-          recognitionRef.current.start();
-        }
+        isProcessingRef.current = false;
+        setTimeout(() => {
+          startListening();
+        }, 500);
       } catch (error) {
         console.error('Microphone access error:', error);
         setError('Microphone access is required for voice commands. Please allow access and try again.');
@@ -616,18 +482,18 @@ const VoiceAssistant = () => {
             <Button
               onClick={handleVoiceCommand}
               className={`w-24 h-24 rounded-full mx-auto shadow-lg transition-all duration-300 ${
-                isListening 
+                isConversationMode 
                   ? 'bg-red-500 hover:bg-red-600 animate-pulse shadow-red-200' 
                   : ''
               }`}
               style={{
-                backgroundColor: isListening ? undefined : 'hsl(var(--app-primary))',
-                boxShadow: isListening 
+                backgroundColor: isConversationMode ? undefined : 'hsl(var(--app-primary))',
+                boxShadow: isConversationMode 
                   ? '0 0 0 0 rgba(239, 68, 68, 0.7)' 
                   : '0 10px 30px rgba(79, 70, 229, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
               }}
             >
-              {isListening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+              {isConversationMode ? <MicOff className="w-8 h-8" /> : <MessageCircle className="w-8 h-8" />}
             </Button>
           </div>
           
@@ -635,18 +501,34 @@ const VoiceAssistant = () => {
             className="text-2xl font-bold mb-3"
             style={{ color: 'hsl(var(--app-text-primary))' }}
           >
-            {isListening ? 'Listening... Speak now!' : 'Tap to speak'}
+            {isConversationMode 
+              ? (isListening ? 'Listening...' : isSpeaking ? 'Speaking...' : 'Conversation Active')
+              : 'Start Conversation'
+            }
           </h3>
           
           <p 
             className="text-base mb-4"
             style={{ color: 'hsl(var(--app-text-secondary))' }}
           >
-            {isListening 
-              ? 'I\'m actively listening and can manage your tasks and meetings.'
-              : 'Your AI assistant with full task and meeting management capabilities'
+            {isConversationMode 
+              ? 'Having a real-time conversation with your AI assistant. Press the button to stop.'
+              : 'Tap to start a continuous voice conversation with your AI assistant'
             }
           </p>
+
+          {/* Speaking indicator */}
+          {isSpeaking && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <Volume2 className="w-5 h-5 animate-pulse" style={{ color: 'hsl(var(--app-accent))' }} />
+              <p 
+                className="text-sm animate-pulse"
+                style={{ color: 'hsl(var(--app-accent))' }}
+              >
+                AI is speaking...
+              </p>
+            </div>
+          )}
 
           {/* Memory Status */}
           {conversationHistory.length > 0 && (
@@ -678,7 +560,7 @@ const VoiceAssistant = () => {
       </Card>
 
       {/* Error Display */}
-      {error && (
+      {(error || speechError) && (
         <Card 
           className="shadow-lg border-0" 
           style={{ 
@@ -702,7 +584,7 @@ const VoiceAssistant = () => {
                 >
                   Error:
                 </h4>
-                <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{error}</p>
+                <p style={{ color: 'hsl(var(--app-text-secondary))' }}>{error || speechError}</p>
               </div>
             </div>
           </CardContent>
@@ -863,7 +745,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Create task buy groceries due tomorrow with high priority"
+              "What are my tasks for today?" (I'll check your real tasks)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -873,7 +755,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Schedule meeting team standup at 2pm tomorrow"
+              "Show my meetings today" (I'll check your actual calendar)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -883,7 +765,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Complete task call dentist" or "Delete task old project"
+              "Any unread messages?" (I'll check your message count)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -893,7 +775,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Cancel meeting weekly review" or "Show my tasks today"
+              "Help me prioritize my tasks" (Based on your real task data)
             </p>
           </div>
         </CardContent>
