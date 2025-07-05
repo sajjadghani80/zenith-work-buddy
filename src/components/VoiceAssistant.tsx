@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Volume2, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { useMeetings } from '@/hooks/useMeetings';
 import { useMessages } from '@/hooks/useMessages';
 import { useCalls } from '@/hooks/useCalls';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
-import { format, isToday } from 'date-fns';
+import { format, isToday, parse, addDays, addHours, isValid } from 'date-fns';
 
 interface ConversationEntry {
   timestamp: Date;
@@ -29,8 +28,8 @@ const VoiceAssistant = () => {
   const isProcessingRef = useRef(false);
 
   // Get real data from hooks
-  const { tasks } = useTasks();
-  const { meetings } = useMeetings();
+  const { tasks, createTask, deleteTask } = useTasks();
+  const { meetings, createMeeting, updateMeeting } = useMeetings();
   const { messages } = useMessages();
   const { calls } = useCalls();
   const { speak, isSpeaking, error: speechError } = useTextToSpeech();
@@ -72,11 +71,15 @@ const VoiceAssistant = () => {
           console.log('Final transcript:', finalTranscript);
           setTranscript(finalTranscript);
           
-          const aiResponse = generateSmartResponse(finalTranscript, conversationHistory, {
+          const aiResponse = await generateSmartResponse(finalTranscript, conversationHistory, {
             tasks,
             meetings,
             messages,
-            calls
+            calls,
+            createTask,
+            deleteTask,
+            createMeeting,
+            updateMeeting
           });
           
           setResponse(aiResponse);
@@ -167,7 +170,84 @@ const VoiceAssistant = () => {
     };
   }, [conversationHistory, tasks, meetings, messages, calls, isConversationMode, isSpeaking]);
 
-  const generateSmartResponse = (userInput: string, history: ConversationEntry[], realData: any) => {
+  const parseDateTime = (text: string): Date | null => {
+    const now = new Date();
+    const lowercaseText = text.toLowerCase();
+    
+    // Handle "today", "tomorrow", etc.
+    if (lowercaseText.includes('today')) {
+      return now;
+    }
+    if (lowercaseText.includes('tomorrow')) {
+      return addDays(now, 1);
+    }
+    
+    // Handle time patterns like "at 3pm", "at 15:30"
+    const timeMatch = lowercaseText.match(/at (\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1]);
+      const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+      const period = timeMatch[3]?.toLowerCase();
+      
+      if (period === 'pm' && hours !== 12) hours += 12;
+      if (period === 'am' && hours === 12) hours = 0;
+      
+      const date = new Date(now);
+      date.setHours(hours, minutes, 0, 0);
+      
+      // If time has passed today, assume tomorrow
+      if (date < now) {
+        return addDays(date, 1);
+      }
+      return date;
+    }
+    
+    return null;
+  };
+
+  const extractTaskDetails = (text: string) => {
+    const lowercaseText = text.toLowerCase();
+    
+    // Extract priority
+    let priority: 'low' | 'medium' | 'high' = 'medium';
+    if (lowercaseText.includes('high priority') || lowercaseText.includes('urgent')) {
+      priority = 'high';
+    } else if (lowercaseText.includes('low priority')) {
+      priority = 'low';
+    }
+    
+    // Extract due date
+    const dueDate = parseDateTime(text);
+    
+    // Extract task title (remove command words and priority/time info)
+    let title = text
+      .replace(/add task|create task|new task/gi, '')
+      .replace(/high priority|low priority|medium priority|urgent/gi, '')
+      .replace(/today|tomorrow|at \d{1,2}(?::\d{2})?\s*(am|pm)?/gi, '')
+      .trim();
+    
+    return { title, priority, dueDate };
+  };
+
+  const extractMeetingDetails = (text: string) => {
+    const lowercaseText = text.toLowerCase();
+    
+    // Extract meeting title
+    let title = text
+      .replace(/add meeting|create meeting|new meeting|schedule meeting/gi, '')
+      .replace(/today|tomorrow|at \d{1,2}(?::\d{2})?\s*(am|pm)?/gi, '')
+      .trim();
+    
+    // Extract start time
+    const startTime = parseDateTime(text) || addHours(new Date(), 1);
+    
+    // Default to 1 hour duration
+    const endTime = addHours(startTime, 1);
+    
+    return { title, startTime, endTime };
+  };
+
+  const generateSmartResponse = async (userInput: string, history: ConversationEntry[], realData: any) => {
     const lowercaseInput = userInput.toLowerCase();
     
     // Build context from recent conversation
@@ -187,7 +267,138 @@ const VoiceAssistant = () => {
     ) || [];
     const unreadMessages = realData.messages?.filter((msg: any) => !msg.is_read) || [];
     const missedCalls = realData.calls?.filter((call: any) => call.call_type === 'missed') || [];
-    
+
+    // Task creation commands
+    if (lowercaseInput.includes('add task') || lowercaseInput.includes('create task') || lowercaseInput.includes('new task')) {
+      try {
+        const { title, priority, dueDate } = extractTaskDetails(userInput);
+        
+        if (!title) {
+          return 'I need a task title. Please say something like "Add task call the dentist" or "Create high priority task finish report today".';
+        }
+        
+        await realData.createTask.mutateAsync({
+          title,
+          priority,
+          due_date: dueDate?.toISOString(),
+          completed: false,
+          description: ''
+        });
+        
+        let response = `I've added the task "${title}" with ${priority} priority`;
+        if (dueDate) {
+          response += ` due ${isToday(dueDate) ? 'today' : format(dueDate, 'MMM d')}`;
+        }
+        return response + '.';
+      } catch (error) {
+        console.error('Error creating task:', error);
+        return 'Sorry, I had trouble creating that task. Please try again.';
+      }
+    }
+
+    // Task removal commands
+    if (lowercaseInput.includes('remove task') || lowercaseInput.includes('delete task') || lowercaseInput.includes('complete task')) {
+      const taskKeywords = userInput.toLowerCase()
+        .replace(/remove task|delete task|complete task/gi, '')
+        .trim();
+      
+      if (!taskKeywords) {
+        if (pendingTasks.length > 0) {
+          const taskList = pendingTasks.slice(0, 3).map((task: any, index: number) => 
+            `${index + 1}. ${task.title}`
+          ).join(', ');
+          return `Which task would you like to remove? Here are your recent tasks: ${taskList}`;
+        }
+        return 'You don\'t have any pending tasks to remove.';
+      }
+      
+      // Find matching task
+      const matchingTask = pendingTasks.find((task: any) => 
+        task.title.toLowerCase().includes(taskKeywords)
+      );
+      
+      if (matchingTask) {
+        try {
+          await realData.deleteTask.mutateAsync(matchingTask.id);
+          return `I've removed the task "${matchingTask.title}".`;
+        } catch (error) {
+          console.error('Error deleting task:', error);
+          return 'Sorry, I had trouble removing that task. Please try again.';
+        }
+      } else {
+        return `I couldn't find a task matching "${taskKeywords}". Please be more specific.`;
+      }
+    }
+
+    // Meeting creation commands
+    if (lowercaseInput.includes('add meeting') || lowercaseInput.includes('create meeting') || 
+        lowercaseInput.includes('new meeting') || lowercaseInput.includes('schedule meeting')) {
+      try {
+        const { title, startTime, endTime } = extractMeetingDetails(userInput);
+        
+        if (!title) {
+          return 'I need a meeting title. Please say something like "Add meeting team standup today at 9am" or "Schedule meeting with client tomorrow at 2pm".';
+        }
+        
+        await realData.createMeeting.mutateAsync({
+          title,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          status: 'scheduled',
+          attendees: [],
+          description: '',
+          location: ''
+        });
+        
+        return `I've scheduled "${title}" for ${format(startTime, 'MMM d')} at ${format(startTime, 'h:mm a')}.`;
+      } catch (error) {
+        console.error('Error creating meeting:', error);
+        return 'Sorry, I had trouble scheduling that meeting. Please try again.';
+      }
+    }
+
+    // Meeting removal commands
+    if (lowercaseInput.includes('remove meeting') || lowercaseInput.includes('delete meeting') || 
+        lowercaseInput.includes('cancel meeting')) {
+      const meetingKeywords = userInput.toLowerCase()
+        .replace(/remove meeting|delete meeting|cancel meeting/gi, '')
+        .trim();
+      
+      if (!meetingKeywords) {
+        if (todaysMeetings.length > 0) {
+          const meetingList = todaysMeetings.map((meeting: any, index: number) => 
+            `${index + 1}. ${meeting.title} at ${format(new Date(meeting.start_time), 'h:mm a')}`
+          ).join(', ');
+          return `Which meeting would you like to cancel? Here are today's meetings: ${meetingList}`;
+        }
+        return 'You don\'t have any upcoming meetings to cancel.';
+      }
+      
+      // Find matching meeting
+      const upcomingMeetings = realData.meetings?.filter((meeting: any) => 
+        new Date(meeting.start_time) > new Date()
+      ) || [];
+      
+      const matchingMeeting = upcomingMeetings.find((meeting: any) => 
+        meeting.title.toLowerCase().includes(meetingKeywords)
+      );
+      
+      if (matchingMeeting) {
+        try {
+          await realData.updateMeeting.mutateAsync({
+            id: matchingMeeting.id,
+            status: 'cancelled'
+          });
+          return `I've cancelled the meeting "${matchingMeeting.title}".`;
+        } catch (error) {
+          console.error('Error cancelling meeting:', error);
+          return 'Sorry, I had trouble cancelling that meeting. Please try again.';
+        }
+      } else {
+        return `I couldn't find a meeting matching "${meetingKeywords}". Please be more specific.`;
+      }
+    }
+
     // Context-aware responses with real data
     if (lowercaseInput.includes('that') || lowercaseInput.includes('it') || lowercaseInput.includes('them')) {
       const lastEntry = history[history.length - 1];
@@ -366,7 +577,7 @@ const VoiceAssistant = () => {
 
     // Help and default responses
     if (lowercaseInput.includes('help')) {
-      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). Use "show" or "list" for details, "how many" for counts. I also remember our conversation context.`;
+      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). I can also add, remove, and manage your tasks and meetings. Try saying "add task" or "schedule meeting".`;
     }
     
     // Default response with real data context
@@ -374,7 +585,7 @@ const VoiceAssistant = () => {
       return `I heard you say: "${userInput}". I can help you with your tasks, meetings, messages, and calls. We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
     }
     
-    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. Use "show" for details or "how many" for counts.`;
+    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. I can also add, remove, and manage your tasks and meetings.`;
   };
 
   const startListening = () => {
@@ -745,7 +956,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "What are my tasks for today?" (I'll check your real tasks)
+              "Add task call the dentist tomorrow" (Creates new tasks with dates)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -755,7 +966,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Show my meetings today" (I'll check your actual calendar)
+              "Schedule meeting with team today at 2pm" (Creates new meetings)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -765,7 +976,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Any unread messages?" (I'll check your message count)
+              "Remove task dentist" or "Cancel meeting with team" (Removes items)
             </p>
             <p 
               className="flex items-center gap-2"
@@ -775,7 +986,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Help me prioritize my tasks" (Based on your real task data)
+              "What are my tasks for today?" (Shows your real data)
             </p>
           </div>
         </CardContent>
