@@ -4,12 +4,19 @@ import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+interface ConversationEntry {
+  timestamp: Date;
+  userInput: string;
+  aiResponse: string;
+}
+
 const VoiceAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState('');
+  const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -51,9 +58,17 @@ const VoiceAssistant = () => {
         if (finalTranscript) {
           setTranscript(finalTranscript);
           
-          // Generate AI response
-          const aiResponse = simulateVoiceResponse(finalTranscript);
+          // Generate AI response with context
+          const aiResponse = simulateVoiceResponseWithContext(finalTranscript, conversationHistory);
           setResponse(aiResponse);
+          
+          // Add to conversation history
+          const newEntry: ConversationEntry = {
+            timestamp: new Date(),
+            userInput: finalTranscript,
+            aiResponse: aiResponse
+          };
+          setConversationHistory(prev => [...prev.slice(-4), newEntry]); // Keep last 5 exchanges
           
           // Stop listening after getting a result
           recognition.stop();
@@ -104,28 +119,86 @@ const VoiceAssistant = () => {
         recognitionRef.current.abort();
       }
     };
-  }, []);
+  }, [conversationHistory]);
 
-  const simulateVoiceResponse = (userInput: string) => {
+  const simulateVoiceResponseWithContext = (userInput: string, history: ConversationEntry[]) => {
+    const lowercaseInput = userInput.toLowerCase();
+    
+    // Build context from recent conversation
+    const recentContext = history.slice(-3).map(entry => 
+      `User: ${entry.userInput} | AI: ${entry.aiResponse}`
+    ).join(' | ');
+    
+    console.log('Conversation context:', recentContext);
+    
+    // Context-aware responses
+    if (lowercaseInput.includes('that') || lowercaseInput.includes('it') || lowercaseInput.includes('them')) {
+      const lastEntry = history[history.length - 1];
+      if (lastEntry) {
+        if (lastEntry.userInput.toLowerCase().includes('meeting') || lastEntry.aiResponse.toLowerCase().includes('meeting')) {
+          if (lowercaseInput.includes('schedule') || lowercaseInput.includes('set up')) {
+            return 'I\'ll help you schedule those meetings we just discussed. What time works best for you?';
+          }
+          if (lowercaseInput.includes('cancel') || lowercaseInput.includes('remove')) {
+            return 'I can help you cancel those meetings. Which specific meeting would you like me to cancel?';
+          }
+          if (lowercaseInput.includes('details') || lowercaseInput.includes('more')) {
+            return 'Here are more details about your meetings: Meeting 1 is with the marketing team at 2 PM, Meeting 2 is a client call at 4 PM, and Meeting 3 is the weekly standup at 5 PM.';
+          }
+        }
+        
+        if (lastEntry.userInput.toLowerCase().includes('task') || lastEntry.aiResponse.toLowerCase().includes('task')) {
+          if (lowercaseInput.includes('prioritize') || lowercaseInput.includes('organize')) {
+            return 'I\'ll prioritize those tasks for you: 1. Complete project proposal (urgent), 2. Review budget report (high), 3. Team meeting prep (medium), 4. Email follow-ups (low), 5. Update documentation (low).';
+          }
+          if (lowercaseInput.includes('complete') || lowercaseInput.includes('done')) {
+            return 'Great! I\'ll mark those tasks as completed. Which specific task have you finished?';
+          }
+        }
+        
+        if (lastEntry.userInput.toLowerCase().includes('call') || lastEntry.aiResponse.toLowerCase().includes('call')) {
+          if (lowercaseInput.includes('call back') || lowercaseInput.includes('return')) {
+            return 'I\'ll help you return those missed calls. The first one is from John Smith at 555-0123, and the second is from Sarah Johnson at 555-0456. Which one would you like to call first?';
+          }
+        }
+        
+        if (lastEntry.userInput.toLowerCase().includes('message') || lastEntry.aiResponse.toLowerCase().includes('message')) {
+          if (lowercaseInput.includes('read') || lowercaseInput.includes('show')) {
+            return 'Here\'s a summary of those messages: 3 are project updates from your team, 2 are client inquiries, 2 are meeting confirmations, and 1 is a reminder about the deadline. Would you like me to read any specific ones?';
+          }
+        }
+      }
+      
+      return `Based on our previous conversation about "${lastEntry?.userInput || 'your request'}", I can help you with that. What specifically would you like me to do?`;
+    }
+    
+    // Regular responses with context awareness
     const responses = {
-      'schedule': 'I can help you schedule a meeting. What time works best for you?',
-      'meeting': 'You have 3 meetings today. Would you like me to show you the details?',
+      'schedule': history.some(h => h.userInput.toLowerCase().includes('meeting')) 
+        ? 'Since we were just discussing your meetings, would you like to schedule a new one or modify an existing meeting?' 
+        : 'I can help you schedule a meeting. What time works best for you?',
+      'meeting': 'You have 3 meetings today: Marketing team at 2 PM, Client call at 4 PM, and Weekly standup at 5 PM. Would you like me to show you more details?',
       'tasks': 'You have 5 pending tasks. Shall I prioritize them for you?',
       'task': 'You have 5 pending tasks. Shall I prioritize them for you?',
       'calls': 'You have 2 missed calls. Would you like me to call them back?',
       'call': 'You have 2 missed calls. Would you like me to call them back?',
       'messages': 'You have 8 unread messages. Shall I summarize them?',
       'message': 'You have 8 unread messages. Shall I summarize them?',
-      'help': 'I can help you with meetings, tasks, calls, messages, and scheduling. What would you like to do?',
-      'default': 'I\'m here to help! You can ask me about meetings, tasks, calls, or messages.'
+      'help': 'I can help you with meetings, tasks, calls, messages, and scheduling. I also remember our conversation, so you can refer to things we discussed earlier.',
+      'default': 'I\'m here to help! You can ask me about meetings, tasks, calls, or messages. I remember our conversation, so feel free to reference things we talked about.'
     };
 
-    const lowercaseInput = userInput.toLowerCase();
     for (const [key, response] of Object.entries(responses)) {
       if (lowercaseInput.includes(key)) {
         return response;
       }
     }
+    
+    // Default response with context
+    if (history.length > 0) {
+      return `I heard you say: "${userInput}". ${responses.default} We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
+    }
+    
     return `I heard you say: "${userInput}". ${responses.default}`;
   };
 
@@ -160,6 +233,12 @@ const VoiceAssistant = () => {
         setError('Microphone access is required for voice commands. Please allow access and try again.');
       }
     }
+  };
+
+  const clearConversationHistory = () => {
+    setConversationHistory([]);
+    setTranscript('');
+    setResponse('');
   };
 
   if (!isSupported) {
@@ -227,14 +306,41 @@ const VoiceAssistant = () => {
           </h3>
           
           <p 
-            className="text-base"
+            className="text-base mb-4"
             style={{ color: 'hsl(var(--app-text-secondary))' }}
           >
             {isListening 
-              ? 'I\'m actively listening. Speak clearly and say something like "Show my meetings"'
-              : 'Your AI assistant is ready to listen and help with scheduling, tasks, and more'
+              ? 'I\'m actively listening. I remember our conversation and understand context.'
+              : 'Your AI assistant remembers our conversation and can understand follow-up commands'
             }
           </p>
+
+          {/* Memory Status */}
+          {conversationHistory.length > 0 && (
+            <div className="flex items-center justify-center gap-4 mt-4">
+              <p 
+                className="text-sm px-3 py-1 rounded-full"
+                style={{ 
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  color: 'hsl(var(--app-accent))'
+                }}
+              >
+                💭 {conversationHistory.length} conversation{conversationHistory.length !== 1 ? 's' : ''} remembered
+              </p>
+              <Button
+                onClick={clearConversationHistory}
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                style={{
+                  borderColor: 'hsl(var(--border))',
+                  color: 'hsl(var(--app-text-secondary))'
+                }}
+              >
+                Clear Memory
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -334,6 +440,72 @@ const VoiceAssistant = () => {
         </Card>
       )}
 
+      {/* Conversation History */}
+      {conversationHistory.length > 0 && (
+        <Card 
+          className="shadow-lg border-0" 
+          style={{ 
+            backgroundColor: 'hsl(var(--app-surface))',
+            boxShadow: '0 10px 25px rgba(79, 70, 229, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+          }}
+        >
+          <CardContent className="p-6">
+            <h4 
+              className="font-semibold mb-4 text-lg"
+              style={{ color: 'hsl(var(--app-text-primary))' }}
+            >
+              Recent Conversation:
+            </h4>
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {conversationHistory.slice(-3).map((entry, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span 
+                      className="text-xs px-2 py-1 rounded-full font-medium"
+                      style={{ 
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        color: 'hsl(var(--app-primary))'
+                      }}
+                    >
+                      You
+                    </span>
+                    <p 
+                      className="text-sm"
+                      style={{ color: 'hsl(var(--app-text-secondary))' }}
+                    >
+                      {entry.userInput}
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span 
+                      className="text-xs px-2 py-1 rounded-full font-medium"
+                      style={{ 
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        color: 'hsl(var(--app-accent))'
+                      }}
+                    >
+                      AI
+                    </span>
+                    <p 
+                      className="text-sm"
+                      style={{ color: 'hsl(var(--app-text-secondary))' }}
+                    >
+                      {entry.aiResponse}
+                    </p>
+                  </div>
+                  {index < conversationHistory.slice(-3).length - 1 && (
+                    <hr 
+                      className="my-3"
+                      style={{ borderColor: 'hsl(var(--border))' }}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick Commands */}
       <Card 
         className="shadow-lg border-0" 
@@ -358,7 +530,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Show my meetings today"
+              "Show my meetings today" → then → "Schedule that for tomorrow"
             </p>
             <p 
               className="flex items-center gap-2"
@@ -368,7 +540,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "What tasks do I have?"
+              "What tasks do I have?" → then → "Prioritize them"
             </p>
             <p 
               className="flex items-center gap-2"
@@ -378,7 +550,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Any missed calls?"
+              "Any missed calls?" → then → "Call them back"
             </p>
             <p 
               className="flex items-center gap-2"
@@ -388,27 +560,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Check my messages"
-            </p>
-            <p 
-              className="flex items-center gap-2"
-              style={{ color: 'hsl(var(--app-text-secondary))' }}
-            >
-              <div 
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: 'hsl(var(--app-primary))' }}
-              />
-              "Schedule a meeting"
-            </p>
-            <p 
-              className="flex items-center gap-2"
-              style={{ color: 'hsl(var(--app-text-secondary))' }}
-            >
-              <div 
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: 'hsl(var(--app-primary))' }}
-              />
-              "Help me"
+              "Check my messages" → then → "Read them to me"
             </p>
           </div>
         </CardContent>
