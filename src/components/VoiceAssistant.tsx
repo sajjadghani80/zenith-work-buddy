@@ -6,7 +6,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useMessages } from '@/hooks/useMessages';
 import { useCalls } from '@/hooks/useCalls';
-import { format, isToday } from 'date-fns';
+import { format, isToday, addDays } from 'date-fns';
 
 interface ConversationEntry {
   timestamp: Date;
@@ -24,8 +24,8 @@ const VoiceAssistant = () => {
   const recognitionRef = useRef<any>(null);
 
   // Get real data from hooks
-  const { tasks } = useTasks();
-  const { meetings } = useMeetings();
+  const { tasks, createTask, updateTask, deleteTask } = useTasks();
+  const { meetings, createMeeting, updateMeeting } = useMeetings();
   const { messages } = useMessages();
   const { calls } = useCalls();
 
@@ -68,12 +68,17 @@ const VoiceAssistant = () => {
         if (finalTranscript) {
           setTranscript(finalTranscript);
           
-          // Generate AI response with real data
+          // Generate AI response with real data and actions
           const aiResponse = generateSmartResponse(finalTranscript, conversationHistory, {
             tasks,
             meetings,
             messages,
-            calls
+            calls,
+            createTask,
+            updateTask,
+            deleteTask,
+            createMeeting,
+            updateMeeting
           });
           setResponse(aiResponse);
           
@@ -134,7 +139,7 @@ const VoiceAssistant = () => {
         recognitionRef.current.abort();
       }
     };
-  }, [conversationHistory, tasks, meetings, messages, calls]);
+  }, [conversationHistory, tasks, meetings, messages, calls, createTask, updateTask, deleteTask, createMeeting, updateMeeting]);
 
   const generateSmartResponse = (userInput: string, history: ConversationEntry[], realData: any) => {
     const lowercaseInput = userInput.toLowerCase();
@@ -157,6 +162,190 @@ const VoiceAssistant = () => {
     const unreadMessages = realData.messages?.filter((msg: any) => !msg.is_read) || [];
     const missedCalls = realData.calls?.filter((call: any) => call.call_type === 'missed') || [];
     
+    // Task creation commands
+    if (lowercaseInput.includes('create task') || lowercaseInput.includes('add task') || lowercaseInput.includes('new task')) {
+      const taskMatch = userInput.match(/(?:create|add|new)\s+task\s+(.+?)(?:\s+(?:due|by)\s+(.+?))?(?:\s+(?:priority|with)\s+(high|medium|low))?$/i);
+      
+      if (taskMatch) {
+        const title = taskMatch[1]?.trim();
+        const dueDateStr = taskMatch[2]?.trim();
+        const priority = taskMatch[3]?.toLowerCase() || 'medium';
+        
+        if (title) {
+          let dueDate = null;
+          
+          // Parse due date
+          if (dueDateStr) {
+            if (dueDateStr.toLowerCase().includes('today')) {
+              dueDate = new Date().toISOString();
+            } else if (dueDateStr.toLowerCase().includes('tomorrow')) {
+              dueDate = addDays(new Date(), 1).toISOString();
+            } else if (dueDateStr.toLowerCase().includes('next week')) {
+              dueDate = addDays(new Date(), 7).toISOString();
+            }
+          }
+          
+          // Create the task
+          realData.createTask.mutate({
+            title,
+            description: null,
+            completed: false,
+            priority: priority as 'low' | 'medium' | 'high',
+            due_date: dueDate
+          });
+          
+          return `I've created a new ${priority} priority task: "${title}"${dueDate ? ` due ${dueDateStr}` : ''}. The task has been added to your list.`;
+        }
+      }
+      
+      return 'I can help you create a task. Please say something like "Create task buy groceries due tomorrow with high priority" or "Add task call dentist".';
+    }
+
+    // Task deletion commands
+    if (lowercaseInput.includes('delete task') || lowercaseInput.includes('remove task') || lowercaseInput.includes('complete task')) {
+      const isComplete = lowercaseInput.includes('complete task');
+      
+      // Try to extract task name
+      const taskMatch = userInput.match(/(?:delete|remove|complete)\s+task\s+(.+)$/i);
+      
+      if (taskMatch) {
+        const taskName = taskMatch[1]?.trim().toLowerCase();
+        
+        // Find matching task
+        const matchingTask = pendingTasks.find((task: any) => 
+          task.title.toLowerCase().includes(taskName) || taskName.includes(task.title.toLowerCase())
+        );
+        
+        if (matchingTask) {
+          if (isComplete) {
+            realData.updateTask.mutate({
+              id: matchingTask.id,
+              completed: true
+            });
+            return `Great! I've marked "${matchingTask.title}" as completed.`;
+          } else {
+            realData.deleteTask.mutate(matchingTask.id);
+            return `I've deleted the task "${matchingTask.title}" from your list.`;
+          }
+        } else {
+          if (pendingTasks.length > 0) {
+            const taskList = pendingTasks.slice(0, 3).map((task: any, index: number) => 
+              `${index + 1}. ${task.title}`
+            ).join(', ');
+            return `I couldn't find a task matching "${taskName}". Here are your current tasks: ${taskList}. Please be more specific.`;
+          }
+          return `I couldn't find a task matching "${taskName}". You don't have any pending tasks.`;
+        }
+      }
+      
+      if (pendingTasks.length > 0) {
+        const taskList = pendingTasks.slice(0, 3).map((task: any, index: number) => 
+          `${index + 1}. ${task.title}`
+        ).join(', ');
+        return `Which task would you like to ${isComplete ? 'complete' : 'delete'}? Here are your current tasks: ${taskList}`;
+      }
+      
+      return "You don't have any pending tasks to manage.";
+    }
+
+    // Meeting creation commands
+    if (lowercaseInput.includes('create meeting') || lowercaseInput.includes('add meeting') || lowercaseInput.includes('schedule meeting')) {
+      const meetingMatch = userInput.match(/(?:create|add|schedule)\s+meeting\s+(.+?)(?:\s+(?:at|on)\s+(.+?))?(?:\s+(?:for|duration)\s+(\d+)\s*(?:hour|hr|minute|min)s?)?$/i);
+      
+      if (meetingMatch) {
+        const title = meetingMatch[1]?.trim();
+        const timeStr = meetingMatch[2]?.trim();
+        const duration = meetingMatch[3] ? parseInt(meetingMatch[3]) : 60; // Default 60 minutes
+        
+        if (title) {
+          let startTime = new Date();
+          
+          // Parse meeting time
+          if (timeStr) {
+            if (timeStr.toLowerCase().includes('today')) {
+              // Default to next hour
+              startTime.setHours(startTime.getHours() + 1, 0, 0, 0);
+            } else if (timeStr.toLowerCase().includes('tomorrow')) {
+              startTime = addDays(new Date(), 1);
+              startTime.setHours(9, 0, 0, 0); // 9 AM tomorrow
+            } else {
+              // Try to parse time like "2pm", "14:00", etc.
+              const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+              if (timeMatch) {
+                let hours = parseInt(timeMatch[1]);
+                const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+                const ampm = timeMatch[3]?.toLowerCase();
+                
+                if (ampm === 'pm' && hours !== 12) hours += 12;
+                if (ampm === 'am' && hours === 12) hours = 0;
+                
+                startTime.setHours(hours, minutes, 0, 0);
+              }
+            }
+          } else {
+            // Default to next hour
+            startTime.setHours(startTime.getHours() + 1, 0, 0, 0);
+          }
+          
+          const endTime = new Date(startTime.getTime() + duration * 60000);
+          
+          // Create the meeting
+          realData.createMeeting.mutate({
+            title,
+            description: null,
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            location: null,
+            attendees: [],
+            status: 'scheduled'
+          });
+          
+          return `I've scheduled a meeting "${title}" for ${format(startTime, 'MMM d, h:mm a')} - ${format(endTime, 'h:mm a')}. The meeting has been added to your calendar.`;
+        }
+      }
+      
+      return 'I can help you schedule a meeting. Please say something like "Create meeting team standup at 2pm tomorrow" or "Schedule meeting client call for 60 minutes".';
+    }
+
+    // Meeting deletion/cancellation commands
+    if (lowercaseInput.includes('cancel meeting') || lowercaseInput.includes('delete meeting') || lowercaseInput.includes('remove meeting')) {
+      const meetingMatch = userInput.match(/(?:cancel|delete|remove)\s+meeting\s+(.+)$/i);
+      
+      if (meetingMatch) {
+        const meetingName = meetingMatch[1]?.trim().toLowerCase();
+        
+        // Find matching meeting
+        const matchingMeeting = realData.meetings?.find((meeting: any) => 
+          meeting.title.toLowerCase().includes(meetingName) || meetingName.includes(meeting.title.toLowerCase())
+        );
+        
+        if (matchingMeeting) {
+          realData.updateMeeting.mutate({
+            id: matchingMeeting.id,
+            status: 'cancelled'
+          });
+          return `I've cancelled the meeting "${matchingMeeting.title}" scheduled for ${format(new Date(matchingMeeting.start_time), 'MMM d, h:mm a')}.`;
+        } else {
+          if (realData.meetings?.length > 0) {
+            const meetingList = realData.meetings.slice(0, 3).map((meeting: any, index: number) => 
+              `${index + 1}. ${meeting.title} (${format(new Date(meeting.start_time), 'MMM d, h:mm a')})`
+            ).join(', ');
+            return `I couldn't find a meeting matching "${meetingName}". Here are your upcoming meetings: ${meetingList}. Please be more specific.`;
+          }
+          return `I couldn't find a meeting matching "${meetingName}". You don't have any scheduled meetings.`;
+        }
+      }
+      
+      if (realData.meetings?.length > 0) {
+        const meetingList = realData.meetings.slice(0, 3).map((meeting: any, index: number) => 
+          `${index + 1}. ${meeting.title} (${format(new Date(meeting.start_time), 'MMM d, h:mm a')})`
+        ).join(', ');
+        return `Which meeting would you like to cancel? Here are your scheduled meetings: ${meetingList}`;
+      }
+      
+      return "You don't have any scheduled meetings to cancel.";
+    }
+
     // Context-aware responses with real data
     if (lowercaseInput.includes('that') || lowercaseInput.includes('it') || lowercaseInput.includes('them')) {
       const lastEntry = history[history.length - 1];
@@ -335,15 +524,15 @@ const VoiceAssistant = () => {
 
     // Help and default responses
     if (lowercaseInput.includes('help')) {
-      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). Use "show" or "list" for details, "how many" for counts. I also remember our conversation context.`;
+      return `I can help you with your tasks (${pendingTasks.length} pending), meetings (${todaysMeetings.length} today), messages (${unreadMessages.length} unread), and calls (${missedCalls.length} missed). I can also create/delete tasks and schedule/cancel meetings. Use "show," "list," or "create," "delete" commands. I remember our conversation context.`;
     }
     
     // Default response with real data context
     if (history.length > 0) {
-      return `I heard you say: "${userInput}". I can help you with your tasks, meetings, messages, and calls. We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
+      return `I heard you say: "${userInput}". I can help you manage your tasks, meetings, messages, and calls. We were previously talking about ${history[history.length - 1].userInput.toLowerCase().includes('meeting') ? 'meetings' : history[history.length - 1].userInput.toLowerCase().includes('task') ? 'tasks' : 'your requests'}.`;
     }
     
-    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. Use "show" for details or "how many" for counts.`;
+    return `I heard you say: "${userInput}". I can help you with your ${pendingTasks.length} pending tasks, ${todaysMeetings.length} meetings today, ${unreadMessages.length} unread messages, and ${missedCalls.length} missed calls. Try "create task," "schedule meeting," "show tasks," or "cancel meeting" commands.`;
   };
 
   const handleVoiceCommand = async () => {
@@ -454,8 +643,8 @@ const VoiceAssistant = () => {
             style={{ color: 'hsl(var(--app-text-secondary))' }}
           >
             {isListening 
-              ? 'I\'m actively listening and can access your real dashboard data.'
-              : 'Your AI assistant with real-time access to your tasks, meetings, messages, and calls'
+              ? 'I\'m actively listening and can manage your tasks and meetings.'
+              : 'Your AI assistant with full task and meeting management capabilities'
             }
           </p>
 
@@ -674,7 +863,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "What are my tasks for today?" (I'll check your real tasks)
+              "Create task buy groceries due tomorrow with high priority"
             </p>
             <p 
               className="flex items-center gap-2"
@@ -684,7 +873,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Show my meetings today" (I'll check your actual calendar)
+              "Schedule meeting team standup at 2pm tomorrow"
             </p>
             <p 
               className="flex items-center gap-2"
@@ -694,7 +883,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Any unread messages?" (I'll check your message count)
+              "Complete task call dentist" or "Delete task old project"
             </p>
             <p 
               className="flex items-center gap-2"
@@ -704,7 +893,7 @@ const VoiceAssistant = () => {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: 'hsl(var(--app-primary))' }}
               />
-              "Help me prioritize my tasks" (Based on your real task data)
+              "Cancel meeting weekly review" or "Show my tasks today"
             </p>
           </div>
         </CardContent>
