@@ -7,6 +7,7 @@ import MessagesView from '@/components/MessagesView';
 import CallsView from '@/components/CallsView';
 import ProfileSettings from '@/components/ProfileSettings';
 import BottomNavigation from '@/components/BottomNavigation';
+import AppLayout from '@/components/AppLayout';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -21,51 +22,24 @@ const Index = () => {
         return <MessagesView />;
       case 'voice':
         return (
-          <div 
-            className="min-h-screen p-6 pb-24"
-            style={{ backgroundColor: 'hsl(var(--app-background))' }}
+          <AppLayout 
+            title="Voice Assistant" 
+            subtitle="Speak naturally to manage your day"
           >
-            <div className="mb-8">
-              <h1 
-                className="text-3xl font-bold mb-2"
-                style={{ color: 'hsl(var(--app-text-primary))' }}
-              >
-                Voice Assistant
-              </h1>
-              <p 
-                className="text-lg"
-                style={{ color: 'hsl(var(--app-text-secondary))' }}
-              >
-                Speak naturally to manage your day
-              </p>
-            </div>
             <VoiceAssistant />
-          </div>
+          </AppLayout>
         );
       case 'calls':
         return <CallsView />;
       case 'profile':
         return (
-          <div 
-            className="min-h-screen p-6 pb-24"
-            style={{ backgroundColor: 'hsl(var(--app-background))' }}
+          <AppLayout 
+            title="Profile & Settings" 
+            subtitle="Manage your account and preferences"
+            showSubscription={true}
           >
-            <div className="mb-8">
-              <h1 
-                className="text-3xl font-bold mb-2"
-                style={{ color: 'hsl(var(--app-text-primary))' }}
-              >
-                Profile & Settings
-              </h1>
-              <p 
-                className="text-lg"
-                style={{ color: 'hsl(var(--app-text-secondary))' }}
-              >
-                Manage your account and preferences
-              </p>
-            </div>
             <ProfileSettings />
-          </div>
+          </AppLayout>
         );
       default:
         return <Dashboard />;

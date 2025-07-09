@@ -73,10 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    const redirectUrl = `${window.location.origin}/`;
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
         },
@@ -94,10 +96,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkSubscriptionStatus = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription');
-      if (error) throw error;
+      if (error) {
+        console.warn('Subscription check failed, defaulting to free tier:', error);
+        setSubscriptionData({
+          subscribed: false,
+          subscription_tier: "Free",
+          subscription_end: null
+        });
+        return;
+      }
       setSubscriptionData(data);
     } catch (error) {
-      console.error('Failed to check subscription:', error);
+      console.warn('Subscription check failed, defaulting to free tier:', error);
       setSubscriptionData({
         subscribed: false,
         subscription_tier: "Free",
