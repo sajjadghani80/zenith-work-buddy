@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Volume2, MessageCircle } from 'lucide-react';
+import { Mic, MicOff, Volume2, MessageCircle, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTasks } from '@/hooks/useTasks';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useMessages } from '@/hooks/useMessages';
 import { useCalls } from '@/hooks/useCalls';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import MeetingRecorder from '@/components/MeetingRecorder';
 import { format, isToday, parse, addDays, addHours, isValid } from 'date-fns';
 
 interface ConversationEntry {
@@ -18,6 +20,7 @@ interface ConversationEntry {
 const VoiceAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [isConversationMode, setIsConversationMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('assistant');
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [isSupported, setIsSupported] = useState(false);
@@ -680,16 +683,29 @@ const VoiceAssistant = () => {
 
   return (
     <div className="space-y-6">
-      {/* Voice Control Interface */}
-      <Card 
-        className="shadow-lg border-0" 
-        style={{ 
-          backgroundColor: 'hsl(var(--app-surface))',
-          boxShadow: '0 20px 50px rgba(79, 70, 229, 0.15), 0 8px 20px rgba(0, 0, 0, 0.1)'
-        }}
-      >
-        <CardContent className="p-8 text-center">
-          <div className="mb-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="assistant" className="flex items-center gap-2">
+            <MessageCircle className="w-4 h-4" />
+            AI Assistant
+          </TabsTrigger>
+          <TabsTrigger value="meeting" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Meeting Recorder
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="assistant" className="mt-6">
+          {/* Voice Control Interface */}
+          <Card 
+            className="shadow-lg border-0" 
+            style={{ 
+              backgroundColor: 'hsl(var(--app-surface))',
+              boxShadow: '0 20px 50px rgba(79, 70, 229, 0.15), 0 8px 20px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <CardContent className="p-8 text-center">
+              <div className="mb-6">
             <Button
               onClick={handleVoiceCommand}
               className={`w-24 h-24 rounded-full mx-auto shadow-lg transition-all duration-300 ${
@@ -988,9 +1004,15 @@ const VoiceAssistant = () => {
               />
               "What are my tasks for today?" (Shows your real data)
             </p>
-          </div>
+           </div>
         </CardContent>
       </Card>
+    </TabsContent>
+        
+        <TabsContent value="meeting" className="mt-6">
+          <MeetingRecorder />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
