@@ -2,8 +2,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.253e3ffb816346e79235c42c4ae030c5',
-  appName: 'zenith-work-buddy',
+  appId: 'com.zenithworkbuddy.app',
+  appName: 'Zenith Work Buddy',
   webDir: 'dist',
   server: {
     url: 'https://253e3ffb-8163-46e7-9235-c42c4ae030c5.lovableproject.com?forceHideBadge=true',
