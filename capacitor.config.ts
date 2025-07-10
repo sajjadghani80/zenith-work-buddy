@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.253e3ffb816346e79235c42c4ae030c5',
-  appName: 'Personal Assistant AI',
+  appName: 'zenith-work-buddy',
   webDir: 'dist',
   server: {
     url: 'https://253e3ffb-8163-46e7-9235-c42c4ae030c5.lovableproject.com?forceHideBadge=true',
