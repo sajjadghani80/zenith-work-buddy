@@ -42,14 +42,19 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Speech-to-text function called')
     const { audio } = await req.json()
     
     if (!audio) {
+      console.error('No audio data provided in request')
       throw new Error('No audio data provided')
     }
+    
+    console.log('Audio data received, length:', audio.length)
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openaiApiKey) {
+      console.error('OpenAI API key not found in environment variables')
       throw new Error('OpenAI API key not configured')
     }
 
