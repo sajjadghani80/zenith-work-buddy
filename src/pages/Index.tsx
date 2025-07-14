@@ -5,6 +5,7 @@ import VoiceAssistant from '@/components/VoiceAssistant';
 import CalendarView from '@/components/CalendarView';
 import MessagesView from '@/components/MessagesView';
 import CallsView from '@/components/CallsView';
+import SmartCommunicationAssistant from '@/components/SmartCommunicationAssistant';
 import ProfileSettings from '@/components/ProfileSettings';
 import BottomNavigation from '@/components/BottomNavigation';
 import AppLayout from '@/components/AppLayout';
@@ -28,6 +29,13 @@ const Index = () => {
           >
             <VoiceAssistant />
           </AppLayout>
+        );
+      case 'smart-comm':
+        return (
+          <div className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Smart Communication</h1>
+            <SmartCommunicationAssistant />
+          </div>
         );
       case 'calls':
         return <CallsView />;
