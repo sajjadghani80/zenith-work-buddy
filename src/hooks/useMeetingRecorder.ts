@@ -109,11 +109,15 @@ export const useMeetingRecorder = () => {
       });
 
       // Convert speech to text
+      console.log('Calling speech-to-text function with audio length:', audioBase64.length);
       const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke('speech-to-text', {
         body: { audio: audioBase64 }
       });
 
+      console.log('Speech-to-text response:', { data: transcriptData, error: transcriptError });
+
       if (transcriptError) {
+        console.error('Speech-to-text error details:', transcriptError);
         throw new Error(transcriptError.message || 'Failed to convert speech to text');
       }
 
