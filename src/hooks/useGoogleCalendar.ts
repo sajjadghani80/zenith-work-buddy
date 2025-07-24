@@ -43,12 +43,14 @@ export const useGoogleCalendar = () => {
 
       await new Promise((resolve) => window.gapi.load('client:auth2', resolve));
 
-      // Get Google API credentials from environment or config
-      const googleApiKey = process.env.GOOGLE_API_KEY || '';
-      const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+      // TODO: Configure Google Calendar API credentials
+      // For production, these should be stored as Supabase secrets and retrieved via an edge function
+      // For now, you need to replace these placeholder values with your actual Google API credentials
+      const googleApiKey = 'YOUR_GOOGLE_API_KEY_HERE'; // Replace with actual API key
+      const googleClientId = 'YOUR_GOOGLE_CLIENT_ID_HERE'; // Replace with actual client ID
       
-      if (!googleApiKey || !googleClientId) {
-        throw new Error('Google Calendar API credentials not configured. Please set GOOGLE_API_KEY and GOOGLE_CLIENT_ID in your environment.');
+      if (googleApiKey === 'YOUR_GOOGLE_API_KEY_HERE' || googleClientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+        throw new Error('Google Calendar API credentials not configured. Please replace the placeholder values in useGoogleCalendar.ts with your actual Google API credentials.');
       }
 
       // Initialize the client
