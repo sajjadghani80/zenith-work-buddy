@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
+import { useNativeCalendar } from '@/hooks/useNativeCalendar';
 import { format, isToday, isTomorrow } from 'date-fns';
 import GoogleCalendarSync from './GoogleCalendarSync';
 import AvailableTimeSlots from './AvailableTimeSlots';
@@ -14,6 +15,7 @@ import AvailableTimeSlots from './AvailableTimeSlots';
 const CalendarView = () => {
   const { meetings, isLoading, createMeeting } = useMeetings();
   const { isConnected, createGoogleCalendarEvent } = useGoogleCalendar();
+  const { createEvent: createNativeEvent, isNativeAvailable, hasPermission } = useNativeCalendar();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newMeeting, setNewMeeting] = useState({
     title: '',
@@ -56,6 +58,19 @@ const CalendarView = () => {
         };
 
         await createGoogleCalendarEvent(googleEvent);
+      }
+
+      // If native calendar is available, create event in device calendar
+      if (isNativeAvailable && createNativeEvent) {
+        const nativeEvent = {
+          title: newMeeting.title,
+          description: newMeeting.description,
+          startTime: new Date(newMeeting.start_time),
+          endTime: new Date(newMeeting.end_time),
+          location: newMeeting.location,
+        };
+
+        await createNativeEvent(nativeEvent);
       }
 
       // Reset form
@@ -235,7 +250,10 @@ const CalendarView = () => {
                       }}
                     >
                       Schedule Meeting
-                      {isConnected && <span className="text-xs ml-1">(+ Google Cal)</span>}
+                      <div className="text-xs ml-1">
+                        {isConnected && <span>(+ Google)</span>}
+                        {isNativeAvailable && <span>(+ Device)</span>}
+                      </div>
                     </Button>
                     <Button
                       type="button"

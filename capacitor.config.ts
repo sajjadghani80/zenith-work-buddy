@@ -35,8 +35,16 @@ const config: CapacitorConfig = {
       'android.permission.RECEIVE_SMS',
       'android.permission.READ_CONTACTS',
       'android.permission.WAKE_LOCK',
-      'android.permission.VIBRATE'
+      'android.permission.VIBRATE',
+      'android.permission.READ_CALENDAR',
+      'android.permission.WRITE_CALENDAR'
     ]
+  },
+  ios: {
+    infoPlist: {
+      NSCalendarsUsageDescription: 'This app needs access to calendar to create and manage meeting events.',
+      NSRemindersUsageDescription: 'This app needs access to reminders to set meeting reminders.'
+    }
   }
 };
 
