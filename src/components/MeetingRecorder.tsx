@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mic, MicOff, FileText, CheckSquare, Users, Clock, Save, Trash2 } from 'lucide-react';
+import PermissionChecker from '@/components/PermissionChecker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ const MeetingRecorder = () => {
   const { createTask } = useTasks();
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>('');
   const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
+  const [hasPermission, setHasPermission] = useState(false);
 
   const handleStartRecording = async () => {
     setRecordingStartTime(new Date());
@@ -78,7 +80,8 @@ const MeetingRecorder = () => {
   ) || [];
 
   return (
-    <div className="space-y-6">
+    <PermissionChecker onPermissionGranted={() => setHasPermission(true)}>
+      <div className="space-y-6">
       {/* Recording Controls */}
       <Card 
         className="shadow-lg border-0" 
@@ -312,7 +315,8 @@ const MeetingRecorder = () => {
           </Card>
         </div>
       )}
-    </div>
+      </div>
+    </PermissionChecker>
   );
 };
 

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Device } from '@capacitor/device';
 
 interface ProcessedMeeting {
   summary: string;
@@ -29,6 +30,16 @@ export const useMeetingRecorder = () => {
       setError('');
       setTranscript('');
       setProcessedMeeting(null);
+      
+      // Check platform and provide better permission guidance
+      const device = await Device.getInfo();
+      if (device.platform !== 'web') {
+        toast({
+          title: "Mobile Permission Required",
+          description: "Please allow microphone access when prompted to record meetings.",
+          duration: 4000,
+        });
+      }
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
