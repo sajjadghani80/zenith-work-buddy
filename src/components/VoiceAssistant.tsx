@@ -20,7 +20,7 @@ interface ConversationEntry {
 const VoiceAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [isConversationMode, setIsConversationMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('assistant');
+  const [activeTab, setActiveTab] = useState('meeting');
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [isSupported, setIsSupported] = useState(false);
@@ -685,13 +685,13 @@ const VoiceAssistant = () => {
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="assistant" className="flex items-center gap-2">
-            <MessageCircle className="w-4 h-4" />
-            AI Assistant
-          </TabsTrigger>
           <TabsTrigger value="meeting" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            Meeting Recorder
+            Meeting Assist
+          </TabsTrigger>
+          <TabsTrigger value="assistant" className="flex items-center gap-2">
+            <MessageCircle className="w-4 h-4" />
+            Voice Assistant
           </TabsTrigger>
         </TabsList>
         

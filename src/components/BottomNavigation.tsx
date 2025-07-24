@@ -11,7 +11,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
     { id: 'dashboard', label: 'Home', icon: CheckSquare },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
-    { id: 'smart-comm', label: 'Smart', icon: Smartphone },
+    { id: 'meeting-assist', label: 'Meeting', icon: Mic },
     { id: 'calls', label: 'Calls', icon: Phone },
     { id: 'profile', label: 'Profile', icon: User }
   ];

@@ -26,28 +26,35 @@ serve(async (req) => {
 
     console.log('Processing meeting transcript for summary and action items...')
 
-    // Create prompts for AI processing
+    // Create prompts for AI processing with multilingual support
     const summaryPrompt = `
-Please analyze this meeting transcript and provide:
-1. A concise summary of the main discussion points
+You are an expert meeting analyst that supports multiple languages including English and Urdu. 
+Analyze this meeting transcript and provide comprehensive insights. The transcript may contain a mix of English and Urdu languages.
+
+Please analyze the transcript and provide:
+1. A comprehensive summary of the main discussion points and outcomes
 2. Extract any action items or tasks that need to be completed
-3. Identify participants if mentioned
+3. Identify all participants mentioned in the conversation
+4. List key decisions made during the meeting
+5. Identify important topics discussed
 
 Transcript:
 ${transcript}
 
-Please respond in JSON format with the following structure:
+Please respond in JSON format with the following structure (provide response in English regardless of input language):
 {
-  "summary": "Brief summary of the meeting",
+  "summary": "Comprehensive summary of the meeting discussion and outcomes",
   "actionItems": [
     {
-      "task": "Task description",
-      "assignee": "Person assigned (if mentioned)",
-      "dueDate": "Due date if mentioned (ISO format)",
-      "priority": "high|medium|low"
+      "task": "Clear description of the action item",
+      "assignee": "Person assigned (if mentioned, otherwise null)",
+      "dueDate": "Due date if mentioned (ISO format, otherwise null)",
+      "priority": "high|medium|low based on urgency discussed"
     }
   ],
-  "participants": ["List of participants mentioned"]
+  "participants": ["List of all participants mentioned"],
+  "keyDecisions": ["List of important decisions made"],
+  "topics": ["List of main topics discussed"]
 }
 `
 
@@ -63,7 +70,7 @@ Please respond in JSON format with the following structure:
         messages: [
           {
             role: 'system',
-            content: 'You are an AI assistant that analyzes meeting transcripts to extract summaries and action items. Always respond with valid JSON.'
+            content: 'You are an expert multilingual meeting analyst that supports English and Urdu languages. You analyze meeting transcripts to extract comprehensive summaries, action items, key decisions, and topics. Always respond with valid JSON in English, regardless of the input language mix.'
           },
           {
             role: 'user',
@@ -93,7 +100,9 @@ Please respond in JSON format with the following structure:
       processedData = {
         summary: "Meeting summary could not be generated due to parsing error.",
         actionItems: [],
-        participants: []
+        participants: [],
+        keyDecisions: [],
+        topics: []
       }
     }
 
@@ -120,7 +129,9 @@ Please respond in JSON format with the following structure:
               transcript: transcript,
               summary: processedData.summary,
               action_items: processedData.actionItems,
-              participants: processedData.participants
+              participants: processedData.participants,
+              key_decisions: processedData.keyDecisions || [],
+              topics: processedData.topics || []
             })
           
           if (error) {

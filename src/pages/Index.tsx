@@ -21,11 +21,11 @@ const Index = () => {
         return <CalendarView />;
       case 'messages':
         return <MessagesView />;
-      case 'voice':
+      case 'meeting-assist':
         return (
           <AppLayout 
-            title="Voice Assistant" 
-            subtitle="Speak naturally to manage your day"
+            title="Meeting Assist" 
+            subtitle="Record and summarize meetings in English & Urdu"
           >
             <VoiceAssistant />
           </AppLayout>
