@@ -18,8 +18,60 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onToggleMode }) => {
   const { signUp } = useAuth();
   const { toast } = useToast();
 
+  // Email validation
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Password strength validation
+  const validatePassword = (password: string) => {
+    const minLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    
+    return {
+      isValid: minLength && hasUpperCase && hasLowerCase && hasNumbers,
+      minLength,
+      hasUpperCase,
+      hasLowerCase,
+      hasNumbers
+    };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Input validation
+    if (fullName.trim().length < 2) {
+      toast({
+        title: "Invalid Name",
+        description: "Full name must be at least 2 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      toast({
+        title: "Weak Password",
+        description: "Password must be at least 8 characters with uppercase, lowercase, and numbers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -76,7 +128,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onToggleMode }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={8}
               className="bg-white/10 border-white/20 text-white placeholder-white/50"
             />
           </div>

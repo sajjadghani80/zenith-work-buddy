@@ -43,10 +43,18 @@ export const useGoogleCalendar = () => {
 
       await new Promise((resolve) => window.gapi.load('client:auth2', resolve));
 
+      // Get Google API credentials from environment or config
+      const googleApiKey = process.env.GOOGLE_API_KEY || '';
+      const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+      
+      if (!googleApiKey || !googleClientId) {
+        throw new Error('Google Calendar API credentials not configured. Please set GOOGLE_API_KEY and GOOGLE_CLIENT_ID in your environment.');
+      }
+
       // Initialize the client
       await window.gapi.client.init({
-        apiKey: 'YOUR_GOOGLE_API_KEY', // This will need to be configured
-        clientId: 'YOUR_GOOGLE_CLIENT_ID', // This will need to be configured
+        apiKey: googleApiKey,
+        clientId: googleClientId,
         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
         scope: 'https://www.googleapis.com/auth/calendar'
       });
