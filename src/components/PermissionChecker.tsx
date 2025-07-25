@@ -53,32 +53,19 @@ const PermissionChecker: React.FC<PermissionCheckerProps> = ({
         } else {
           // For mobile, try to access microphone briefly to check permission
           console.log('Checking mobile microphone permission...');
-          console.log('Device platform:', device.platform);
-          console.log('Navigator mediaDevices available:', !!navigator.mediaDevices);
-          
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
               audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
             });
             // Permission is granted, stop stream immediately
             stream.getTracks().forEach(track => track.stop());
-            console.log('Mobile permission already granted - stream obtained successfully');
+            console.log('Mobile permission already granted');
             setPermissionStatus('granted');
             onPermissionGranted();
             return;
           } catch (mobileError) {
             console.log('Mobile permission check failed:', mobileError);
-            console.log('Error name:', (mobileError as Error).name);
-            console.log('Error message:', (mobileError as Error).message);
-            
-            // Check if it's actually a permission error or something else
-            if ((mobileError as Error).name === 'NotAllowedError') {
-              console.log('Permission definitely denied');
-              setPermissionStatus('prompt');
-            } else {
-              console.log('Other error - might be hardware issue, treating as prompt');
-              setPermissionStatus('prompt');
-            }
+            setPermissionStatus('prompt');
           }
         }
       } catch (error) {
