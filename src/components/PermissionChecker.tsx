@@ -25,21 +25,37 @@ const PermissionChecker: React.FC<PermissionCheckerProps> = ({
       const device = await Device.getInfo();
       setIsMobile(device.platform !== 'web');
 
-      // Try to access microphone to check permission status
+      // Check if browser supports getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.log('getUserMedia not supported');
+        setPermissionStatus('denied');
+        return;
+      }
+
+      // Check microphone permission status without requesting access
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop()); // Immediately stop the test stream
-        setPermissionStatus('granted');
-        onPermissionGranted();
+        // For web browsers, try to check permission status first if available
+        if ('permissions' in navigator && device.platform === 'web') {
+          const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          console.log('Permission status:', permissionStatus.state);
+          
+          if (permissionStatus.state === 'granted') {
+            setPermissionStatus('granted');
+            onPermissionGranted();
+            return;
+          } else if (permissionStatus.state === 'denied') {
+            setPermissionStatus('denied');
+            return;
+          }
+        }
+        
+        // If permission status is unknown or we're on mobile, we need to prompt
+        setPermissionStatus('prompt');
+        
       } catch (error) {
         console.log('Permission check error:', error);
-        // Check if it's a permission error or device not available
-        const errorMessage = (error as Error).message.toLowerCase();
-        if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
-          setPermissionStatus('denied');
-        } else {
-          setPermissionStatus('prompt');
-        }
+        // If we can't check permissions, assume we need to prompt
+        setPermissionStatus('prompt');
       }
     } catch (error) {
       console.error('Failed to check device info:', error);
