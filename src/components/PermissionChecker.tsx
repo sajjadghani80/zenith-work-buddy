@@ -25,18 +25,7 @@ const PermissionChecker: React.FC<PermissionCheckerProps> = ({
       const device = await Device.getInfo();
       setIsMobile(device.platform !== 'web');
 
-      // For web, we can check if getUserMedia is available
-      if (device.platform === 'web') {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          setPermissionStatus('granted');
-          onPermissionGranted();
-        } else {
-          setPermissionStatus('denied');
-        }
-        return;
-      }
-
-      // For mobile, we'll need to test getUserMedia directly
+      // Try to access microphone to check permission status
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(track => track.stop()); // Immediately stop the test stream
@@ -44,7 +33,13 @@ const PermissionChecker: React.FC<PermissionCheckerProps> = ({
         onPermissionGranted();
       } catch (error) {
         console.log('Permission check error:', error);
-        setPermissionStatus('prompt');
+        // Check if it's a permission error or device not available
+        const errorMessage = (error as Error).message.toLowerCase();
+        if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
+          setPermissionStatus('denied');
+        } else {
+          setPermissionStatus('prompt');
+        }
       }
     } catch (error) {
       console.error('Failed to check device info:', error);
@@ -54,6 +49,9 @@ const PermissionChecker: React.FC<PermissionCheckerProps> = ({
 
   const requestPermission = async () => {
     try {
+      console.log('Requesting microphone permission...');
+      
+      // Use getUserMedia to trigger the native permission popup
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -64,11 +62,21 @@ const PermissionChecker: React.FC<PermissionCheckerProps> = ({
       
       // Test successful, stop the stream immediately
       stream.getTracks().forEach(track => track.stop());
+      console.log('Permission granted successfully');
       setPermissionStatus('granted');
       onPermissionGranted();
     } catch (error) {
       console.error('Permission denied:', error);
-      setPermissionStatus('denied');
+      const errorMessage = (error as Error).message;
+      console.log('Error details:', errorMessage);
+      
+      // Check if the error is specifically about permission denial
+      if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
+        setPermissionStatus('denied');
+      } else {
+        // Other errors might be due to no microphone available
+        setPermissionStatus('denied');
+      }
     }
   };
 
