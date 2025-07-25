@@ -32,29 +32,44 @@ const PermissionChecker: React.FC<PermissionCheckerProps> = ({
         return;
       }
 
-      // Check microphone permission status without requesting access
+      // Check microphone permission status
       try {
-        // For web browsers, try to check permission status first if available
-        if ('permissions' in navigator && device.platform === 'web') {
-          const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-          console.log('Permission status:', permissionStatus.state);
-          
-          if (permissionStatus.state === 'granted') {
+        if (device.platform === 'web') {
+          // For web browsers, use permissions API if available
+          if ('permissions' in navigator) {
+            const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+            console.log('Web permission status:', permissionStatus.state);
+            
+            if (permissionStatus.state === 'granted') {
+              setPermissionStatus('granted');
+              onPermissionGranted();
+              return;
+            } else if (permissionStatus.state === 'denied') {
+              setPermissionStatus('denied');
+              return;
+            }
+          }
+          setPermissionStatus('prompt');
+        } else {
+          // For mobile, try to access microphone briefly to check permission
+          console.log('Checking mobile microphone permission...');
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+              audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+            });
+            // Permission is granted, stop stream immediately
+            stream.getTracks().forEach(track => track.stop());
+            console.log('Mobile permission already granted');
             setPermissionStatus('granted');
             onPermissionGranted();
             return;
-          } else if (permissionStatus.state === 'denied') {
-            setPermissionStatus('denied');
-            return;
+          } catch (mobileError) {
+            console.log('Mobile permission check failed:', mobileError);
+            setPermissionStatus('prompt');
           }
         }
-        
-        // If permission status is unknown or we're on mobile, we need to prompt
-        setPermissionStatus('prompt');
-        
       } catch (error) {
         console.log('Permission check error:', error);
-        // If we can't check permissions, assume we need to prompt
         setPermissionStatus('prompt');
       }
     } catch (error) {
